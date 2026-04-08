@@ -1,0 +1,35 @@
+; Drinkport-Barcode - Inno Setup Skript
+; Erstellt eine Installations-Datei fuer das gesamte Programm.
+
+[Setup]
+AppId={{D1BB882B-79CE-420C-AADE-18755BB14253}}
+AppName=Drinkport-Barcode
+AppVersion=1.2
+AppPublisher=Drinport KG
+DefaultDirName={autopf}\Drinkport\Drinkport-Barcode
+DefaultGroupName=Drinkport
+OutputDir=D:\Dokumente\Projekte\barcode-lvs-python\dist
+OutputBaseFilename=Drinkport-Barcode_Setup
+PrivilegesRequired=admin
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+SetupIconFile=D:\Dokumente\Projekte\barcode-lvs-python\icon.ico
+UninstallDisplayIcon={app}\Drinkport-Barcode.exe
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+; Alle Dateien aus dem dist-Ordner rekursiv einbeziehen
+Source: "D:\Dokumente\Projekte\barcode-lvs-python\dist\Drinkport-Barcode\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Beispiel: config.ini nur kopieren, wenn sie noch NICHT existiert (verhindert Ueberschreiben von Passwoertern bei Updates)
+; Source: "D:\Dokumente\Projekte\barcode-lvs-python\config.ini"; DestDir: "{app}"; Flags: onlyifdoesntexist
+
+[Icons]
+Name: "{group}\Drinkport-Barcode"; Filename: "{app}\Drinkport-Barcode.exe"
+Name: "{autodesktop}\Drinkport-Barcode"; Filename: "{app}\Drinkport-Barcode.exe"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\Drinkport-Barcode.exe"; Description: "{cm:LaunchProgram,Drinkport-Barcode}"; Flags: nowait postinstall skipifsilent

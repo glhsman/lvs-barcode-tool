@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build outputs
+build/
+dist/
+*.spec.bak
+
+# PyInstaller caches
+*.toc
+*.pyz
+warn-*.txt
+
+# Installer/build leftovers
+setup_script.~is
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local runtime/config secrets
+config.ini
+
+# Optional local binaries
+zint.dll
