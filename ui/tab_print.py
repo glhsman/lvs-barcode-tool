@@ -65,19 +65,26 @@ class PrintTab:
         ttk.Spinbox(ctrl, from_=72, to=1200, textvariable=self._dpi_var,
                     width=6, command=self.refresh_preview).pack(side=tk.LEFT, padx=4)
 
-        ttk.Separator(ctrl, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
+        # Aktionen (rechts, zweizeilig)
+        action_wrap = ttk.Frame(ctrl)
+        action_wrap.pack(side=tk.RIGHT, padx=(10, 0))
+        ttk.Separator(ctrl, orient=tk.VERTICAL).pack(side=tk.RIGHT, fill=tk.Y, padx=8)
 
-        # Aktionen
-        ttk.Button(ctrl, text="In DB speichern",
-                   command=self._save_to_db).pack(side=tk.LEFT, padx=2)
-        ttk.Button(ctrl, text="Als PNG exportieren",
-                   command=lambda: self._export("PNG")).pack(side=tk.LEFT, padx=2)
-        ttk.Button(ctrl, text="Als PDF exportieren",
-                   command=lambda: self._export("PDF")).pack(side=tk.LEFT, padx=2)
-        ttk.Button(ctrl, text="Drucken …",
-                   command=self._print_current).pack(side=tk.LEFT, padx=10)
-        ttk.Button(ctrl, text="↻ Aktualisieren",
-                   command=self.refresh_preview).pack(side=tk.LEFT, padx=2)
+        action_btns = [
+            ("In DB speichern", self._save_to_db),
+            ("Als PNG exportieren", lambda: self._export("PNG")),
+            ("Als PDF exportieren", lambda: self._export("PDF")),
+            ("Drucken …", self._print_current),
+            ("↻ Aktualisieren", self.refresh_preview),
+        ]
+        for i, (label, cmd) in enumerate(action_btns):
+            r = 0 if i < 3 else 1
+            c = i if i < 3 else i - 3
+            ttk.Button(action_wrap, text=label, command=cmd).grid(
+                row=r, column=c, padx=2, pady=1, sticky="ew"
+            )
+        for col in range(3):
+            action_wrap.grid_columnconfigure(col, weight=1)
 
         # Hauptbereich: links Vorschau, rechts Liste gespeicherter Etiketten
         main = ttk.PanedWindow(self.frame, orient=tk.HORIZONTAL)
@@ -254,6 +261,7 @@ class PrintTab:
         )
         repo.save_label(label)
         self._load_saved_labels()
+        self.app.mark_changed(False)
         messagebox.showinfo("Gespeichert",
                             f"Etikett «{name}» in der Datenbank gespeichert.")
 
