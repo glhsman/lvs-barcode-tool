@@ -32,19 +32,35 @@ Bevor du Daten eingibst, musst du dem Programm sagen, was du speichern willst:
 3. Füge Felder hinzu (z.B. `Barcode`, `Bezeichnung`, `Menge`).
 4. **WICHTIG:** Du kannst danach auf **„Hinzufügen“** klicken, um manuell Werte einzutragen, oder eine CSV-Datei **importieren**.
 
-### Schritt C: Das Etikett gestalten (Reiter „Etikett“)
+### Schritt C: Das Etikett Format wählen (optional)
+Im **Reiter „Etikett"** → **„Format"**-Dialog findest du vordefinierte **Label-Templates**:
+- **Versandetikett 100×50 mm** – Standard-Kleinetiketten
+- **Zweckform 3659** – A4-Bogen mit 3×4 Etiketten
+- **Zweckform 3474** – A4-Bogen mit 4×5 Etiketten  
+- **A6 Etikett** – Größere Versandlabel (148×105 mm)
+
+Wähle ein Template aus der Dropdown-Liste und klicke **„Übernehmen"**, um Größe und Layout automatisch zu setzen. Du kannst die Werte anschließend manuell anpassen.
+
+### Schritt D: Das Etikett gestalten (Reiter „Etikett")
 Hier zeichnest du dein Layout:
 1. Wähle ein Werkzeug (z.B. **BC** für Barcode oder **T** für Text).
 2. Klicke auf das weiße Etikett, um das Objekt zu platzieren.
 3. Klicke ein Objekt doppelt an, um die **Eigenschaften** zu öffnen.
 4. **Platzhalter nutzen:** Um Daten aus deiner Tabelle zu drucken, schreibe den Feldnamen in eckigen Klammern: `[~Feldname~]`. Beispiel: `[~Barcode~]`.
 
-### Schritt D: Vorschau und Export (Reiter „Druck“)
-1. Gehe in den Reiter **„Druck“**.
+**Profitipps im Editor:**
+- **Cursor-Feedback:** Der Mauszeiger zeigt dir automatisch, was passiert (Verschiebe-Symbol ⬌, Resize-Pfeile ↔, Zeichnen +)
+- **Hover-Highlights:** Griffe werden blau hervorgehoben, wenn du sie ansteuerst
+- **2D-Barcodes quadratisch:** QR-Codes, DataMatrix und andere 2D-Codes bleiben immer quadratisch beim Resize
+- **Zoom (Strg + Mausrad):** 275% Default-Zoom für komfortables Arbeiten; fein regulierbar in 25%-Schritten
+
+### Schritt E: Vorschau und Export (Reiter „Druck")
+1. Gehe in den Reiter **„Druck"**.
 2. Klicke oben auf die Pfeile (◀ ▶), um durch deine Datensätze zu blättern.
 3. Das Programm füllt die Platzhalter automatisch mit den echten Werten aus deiner Tabelle.
 4. **Export:** Speichere das Ergebnis als **PDF** oder **PNG**.
-5. **Archivierung:** Mit **„In DB speichern“** wird das Etikett dauerhaft als Bild in der Datenbank archiviert (erscheint in der Liste rechts).
+5. **Druck:** Mit **„Drucken …"** direkt an dein Etikett-Druckgerät senden.
+6. **Archivierung:** Mit **„In DB speichern"** wird das Etikett dauerhaft als Bild in der Datenbank archiviert (erscheint in der Liste rechts).
 
 ---
 
@@ -52,7 +68,7 @@ Hier zeichnest du dein Layout:
 
 *   **Barcode wird nicht angezeigt:** Überprüfe, ob deine Daten für den gewählten Typ gültig sind (z.B. braucht ein EAN-13 genau 13 Ziffern).
 *   **Platzhalter leer:** Prüfe im Reiter „Daten -> Felder bearbeiten“, ob der Feldname exakt mit deinem Platzhalter übereinstimmt (z.B. `[~ArtNr~]`). Die Groß-/Kleinschreibung wird vom Programm automatisch toleriert.
-*   **Keine DLL nötig:** Dieses Programm nutzt eine integrierte Python-Engine für Barcodes. Es muss keine zusätzliche `zint.dll` mehr installiert werden.
+*   **Keine DLL nötig:** Dieses Programm nutzt eine integrierte Python-Engine für Barcodes.
 
 ---
-*Version 1.1 / April 2026*
+*Version 1.3 / April 2026*
