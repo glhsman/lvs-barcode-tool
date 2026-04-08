@@ -203,60 +203,89 @@ def _render_barcode(
         bc_img: Optional[Image.Image] = None
 
         # ─── QR-Code (Zint 58) ───────────────────────────────────────────────
-        if bc_type_id == 58:
-            import qrcode
-            qr = qrcode.QRCode(box_size=10, border=1)
-            qr.add_data(data)
-            qr.make(fit=True)
-            bc_img = qr.make_image(fill_color=fg_color, back_color=bg_color).convert("RGB")
-
         # ─── Standard Barcodes (python-barcode) ──────────────────────────────
-        else:
-            import barcode
-            from barcode.writer import ImageWriter
+            text_height_needed = 0
+        
+            # ─── QR-Code (Zint 58) ───────────────────────────────────────────────
+            if bc_type_id == 58:
+                import qrcode
+                qr = qrcode.QRCode(box_size=10, border=1)
+                qr.add_data(data)
+                qr.make(fit=True)
+                bc_img = qr.make_image(fill_color=fg_color, back_color=bg_color).convert("RGB")
+        
+            # ─── Standard Barcodes (python-barcode) ──────────────────────────────
+            else:
+                import barcode
+                from barcode.writer import ImageWriter
             
-            mapping = {
-                20: 'code128',
-                8:  'code39',
-                13: 'ean13',
-                34: 'upca',
-                3:  'itf',
-            }
+                mapping = {
+                    20: 'code128',
+                    8:  'code39',
+                    13: 'ean13',
+                    34: 'upca',
+                    3:  'itf',
+                }
             
-            bc_name = mapping.get(bc_type_id, 'code128')
+                bc_name = mapping.get(bc_type_id, 'code128')
             
-            # EAN/UPC brauchen exakt 12/13 Stellen, wir füllen ggf. mit Nullen
-            if bc_name == 'ean13':
-                data = data.zfill(13)[:13]
-            elif bc_name == 'upca':
-                data = data.zfill(12)[:12]
-
-            bc_class = barcode.get_barcode_class(bc_name)
+                # EAN/UPC brauchen exakt 12/13 Stellen, wir füllen ggf. mit Nullen
+                if bc_name == 'ean13':
+                    data = data.zfill(13)[:13]
+                elif bc_name == 'upca':
+                    data = data.zfill(12)[:12]
+        
+                bc_class = barcode.get_barcode_class(bc_name)
             
-            # Barcode generieren
-            writer = ImageWriter()
-            options = {
-                "write_text": show_hrt,
-                "background": bg_color,
-                "foreground": fg_color,
-                "module_height": 15.0,
-                "module_width": 0.2,
-                "font_size": 10,
-                "text_distance": 1.0,
-            }
+                # Wenn Klartext angezeigt werden soll, rendern wir OHNE Text im Bild
+                # und fügen ihn separat darunter hinzu (verhindert Überlagerung)
+                writer = ImageWriter()
+                options = {
+                    "write_text": False,  # WICHTIG: Text separat rendern!
+                    "background": bg_color,
+                    "foreground": fg_color,
+                    "module_height": 15.0,
+                    "module_width": 0.2,
+                    "font_size": 10,
+                    "text_distance": 1.0,
+                }
             
-            try:
-                bc_inst = bc_class(data, writer=writer)
-                # Wir schalten die Prüfziffern-Validierung für EAN aus, 
-                # falls die Daten "roh" aus der DB kommen
-                bc_img = bc_inst.render(writer_options=options)
-            except Exception as e:
-                _draw_placeholder(img, x, y, w, h, f"Format-Fehler:\n{e}")
-                return
-
-        if bc_img:
-            bc_img = bc_img.resize((w, h), Image.LANCZOS)
-            img.paste(bc_img, (x, y))
+                try:
+                    bc_inst = bc_class(data, writer=writer)
+                    bc_img = bc_inst.render(writer_options=options)
+                
+                    # Wenn Klartext gewünscht: separaten Space berechnen
+                    if show_hrt:
+                        # Grobe Schätzung: ~15px für Textzeile + Abstand
+                        text_height_needed = max(20, int(h * 0.25))
+                except Exception as e:
+                    _draw_placeholder(img, x, y, w, h, f"Format-Fehler:\n{e}")
+                    return
+        
+            if bc_img:
+                # Höhe für Barcode ggf. reduzieren, wenn Klartext nötig
+                bc_height = h - text_height_needed
+            
+                # Barcode skalieren
+                bc_img = bc_img.resize((w, bc_height), Image.LANCZOS)
+                img.paste(bc_img, (x, y))
+            
+                # Klartext separat unten rendern
+                if show_hrt and text_height_needed > 0:
+                    text_y = y + bc_height
+                        # Text-Rendering
+                        draw_inst = ImageDraw.Draw(img)
+                        text_font_size = int(max(7, text_height_needed - 3))
+                        text_font = _find_font("Courier New", text_font_size, False, False)
+                        text_color = fg_color if fg_color.startswith("#") else f"#{fg_color}"
+                        text_y = y + bc_height + (text_height_needed // 2)
+                        draw_inst.text(
+                            ((x + w // 2), text_y),
+                            data,
+                            fill=text_color,
+                            font=text_font,
+                            anchor="mm",
+                        )
 
     except Exception as exc:
         _draw_placeholder(img, x, y, w, h, f"Render-Fehler:\n{exc}")
