@@ -109,7 +109,7 @@ class DataTab:
             values = [check] + [rec.values.get(f.name, "") for f in self._fields]
             tag = "selected" if rec.selected else ""
             self._tree.insert("", tk.END, iid=str(rec.id), values=values, tags=(tag,))
-        self._tree.tag_configure("selected", background="#e8f4e8")
+        self._tree.tag_configure("selected", background="#6F8F79", foreground="#FFFFFF")
         self._update_status()
 
     def _update_status(self) -> None:

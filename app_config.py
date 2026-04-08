@@ -35,11 +35,6 @@ def get_db_config() -> dict:
     }
 
 
-def get_zint_dll_path() -> str:
-    # Nicht mehr benötigt, da native Python-Engines genutzt werden
-    return ""
-
-
 def get_default_dpi() -> int:
     if _cfg.has_section("app"):
         return int(_cfg.get("app", "default_dpi", fallback="203").strip(' "\''))

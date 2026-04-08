@@ -2,7 +2,7 @@
 setlocal
 color 0B
 echo ==================================================
-echo RADIKAL-BUILD: Drinkport-Barcode (v1.0)
+echo RADIKAL-BUILD: Drinkport-Barcode (v1.3)
 echo ==================================================
 echo.
 
@@ -10,7 +10,14 @@ echo.
 echo 1. Raeume temporaere Build-Reste auf...
 if exist build rmdir /s /q build
 if exist "Drinkport-Barcode.spec" del /q "Drinkport-Barcode.spec"
-if exist "dist\Drinkport-Barcode.exe" del /q "dist\Drinkport-Barcode.exe"
+if exist "dist\Drinkport-Barcode" rmdir /s /q "dist\Drinkport-Barcode"
+if exist "dist\Drinkport-Barcode" (
+    echo.
+    echo FEHLER: Ordner "dist\Drinkport-Barcode" ist gesperrt.
+    echo Bitte schliesse laufende Drinkport-Barcode.exe und ggf. geoeffnete Explorer-Fenster.
+    pause
+    exit /b 1
+)
 
 echo.
 :: 2. Abhängigkeiten (nutzt das lokale .venv)
@@ -20,13 +27,19 @@ if exist .venv\Scripts\python.exe (
 ) else (
     set PY_EXE=python
 )
-%PY_EXE% -m pip install pyinstaller sv-ttk mariadb python-barcode qrcode pillow pywin32 --quiet
+%PY_EXE% -m pip install pyinstaller sv-ttk mariadb python-barcode qrcode pillow reportlab pywin32 --quiet
+if errorlevel 1 (
+    echo.
+    echo FEHLER: Abhaengigkeiten konnten nicht installiert werden.
+    pause
+    exit /b 1
+)
 
 echo.
 :: 3. EXE erstellen (Modernes Dark-Style)
 echo 3. Erstelle App-Ordner (dist/Drinkport-Barcode)...
 :: Wir nutzen --onedir für maximale Stabilitaet.
-%PY_EXE% -m PyInstaller --noconsole --onedir ^
+%PY_EXE% -m PyInstaller --noconfirm --noconsole --onedir ^
     --name="Drinkport-Barcode" ^
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
@@ -34,6 +47,13 @@ echo 3. Erstelle App-Ordner (dist/Drinkport-Barcode)...
     --collect-all mysql.connector ^
     --hidden-import win32timezone ^
     main.py
+
+if errorlevel 1 (
+    echo.
+    echo FEHLER: PyInstaller-Build fehlgeschlagen.
+    pause
+    exit /b 1
+)
 
 echo.
 echo ==================================================

@@ -14,6 +14,7 @@ class MainWindow:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Drinkport-Barcode – Python Edition")
+        self._theme_var = tk.StringVar(value=getattr(self.root, "theme_profile", "soft_plus"))
         
         # Icon setzen (falls vorhanden)
         import os
@@ -23,8 +24,14 @@ class MainWindow:
             except Exception:
                 pass
 
-        self.root.geometry("1200x780")
-        self.root.minsize(900, 600)
+        min_w, min_h = 1100, 680
+        self.root.minsize(min_w, min_h)
+        pref_w, pref_h = 1233, 800
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+        init_w = min(pref_w, max(min_w, screen_w - 60))
+        init_h = min(pref_h, max(min_h, screen_h - 90))
+        self.root.geometry(f"{init_w}x{init_h}")
 
         self.current_project: Project | None = None
         self._projects: list[Project] = []
@@ -52,7 +59,11 @@ class MainWindow:
         menubar.add_cascade(label="Projekt", menu=m_project)
 
         m_settings = tk.Menu(menubar, tearoff=False)
-        m_settings.add_command(label="Optionen …",     command=self._show_options)
+        m_theme = tk.Menu(m_settings, tearoff=False)
+        m_theme.add_radiobutton(label="Dark", variable=self._theme_var, value="dark", command=self._apply_theme_from_menu)
+        m_theme.add_radiobutton(label="Dark Soft", variable=self._theme_var, value="soft", command=self._apply_theme_from_menu)
+        m_theme.add_radiobutton(label="Dark Soft+", variable=self._theme_var, value="soft_plus", command=self._apply_theme_from_menu)
+        m_settings.add_cascade(label="Theme", menu=m_theme)
         menubar.add_cascade(label="Einstellungen", menu=m_settings)
 
         m_help = tk.Menu(menubar, tearoff=False)
@@ -108,9 +119,20 @@ class MainWindow:
 
     def _build_statusbar(self) -> None:
         self._status_var = tk.StringVar(value="Bereit")
-        bar = ttk.Label(self.root, textvariable=self._status_var,
-                        relief=tk.SUNKEN, anchor=tk.W, padding=(4, 1))
+        self._window_size_var = tk.StringVar(value="")
+
+        bar = ttk.Frame(self.root, relief=tk.SUNKEN, padding=(4, 1))
         bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        ttk.Label(bar, textvariable=self._status_var, anchor=tk.W).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Label(bar, textvariable=self._window_size_var, anchor=tk.E).pack(side=tk.RIGHT)
+
+        self.root.bind("<Configure>", self._on_root_configure)
+        self._window_size_var.set(f"Fenster: {self.root.winfo_width()} x {self.root.winfo_height()}")
+
+    def _on_root_configure(self, event) -> None:
+        if event.widget is self.root:
+            self._window_size_var.set(f"Fenster: {event.width} x {event.height}")
 
     # ─── DB-Verbindungstest ───────────────────────────────────────────────────
 
@@ -239,13 +261,21 @@ class MainWindow:
             text="● Projekt wurde verändert" if changed else ""
         )
 
-    def _show_options(self) -> None:
-        messagebox.showinfo("Optionen", "Konfiguration via config.ini (im Programmordner).")
+    def _apply_theme_from_menu(self) -> None:
+        profile = self._theme_var.get()
+        applier = getattr(self.root, "apply_theme_profile", None)
+        if callable(applier):
+            try:
+                applier(profile)
+                self.set_status(f"Theme aktiv: {profile}")
+            except Exception as exc:
+                messagebox.showerror("Theme", f"Theme konnte nicht gesetzt werden:\n{exc}")
 
     def _show_about(self) -> None:
         messagebox.showinfo(
             "Über Drinkport-Barcode – Python Edition",
             "Drinkport-Barcode – Python Edition\n"
+            "Version 1.3\n"
             "Moderne Lösung für Lagerbeschriftungen\n\n"
             "Barcode-Engine: Python Native (barcode/qrcode)\n"
             "Datenbank: MariaDB\n"

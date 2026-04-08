@@ -1,4 +1,4 @@
 mysql-connector-python>=8.2.0
 Pillow>=10.3.0
 reportlab>=4.1.0
-ttkbootstrap>=1.10.0
+sv-ttk>=2.6.0

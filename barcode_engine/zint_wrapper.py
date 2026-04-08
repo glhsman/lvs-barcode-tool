@@ -1,5 +1,5 @@
 """
-ctypes-Wrapper für zint.dll (Zint Barcode Library, Version 2.12.x).
+ctypes-Wrapper fuer die Zint Barcode Library (Version 2.12.x).
 
 Zint-Projektseite: https://zint.org.uk
 Die struct-Definition entspricht zint.h aus dem 2.12-Branch
@@ -11,8 +11,6 @@ import ctypes
 import ctypes.util
 from pathlib import Path
 from typing import Optional
-
-import app_config
 
 # ─── Barcode-Typ-Konstanten aus zint.h ────────────────────────────────────────
 BARCODE_CODE11        = 1
@@ -124,14 +122,14 @@ def _load_library() -> ctypes.CDLL:
     global _lib, _load_error
     if _lib is not None:
         return _lib
-    dll_path = app_config.get_zint_dll_path()
+    lib_name = ctypes.util.find_library("zint") or "zint"
     try:
-        lib = ctypes.CDLL(dll_path)
+        lib = ctypes.CDLL(lib_name)
     except OSError as exc:
         _load_error = str(exc)
         raise RuntimeError(
-            f"zint.dll konnte nicht geladen werden:\n{exc}\n"
-            f"Pfad: {dll_path}"
+            f"Zint-Bibliothek konnte nicht geladen werden:\n{exc}\n"
+            f"Bibliothek: {lib_name}"
         ) from exc
 
     # Funktionssignaturen registrieren
@@ -197,7 +195,7 @@ def render_barcode(
     option_3: int = 0,
 ) -> BarcodeResult:
     """
-    Rendert einen Barcode via zint.dll und gibt ein BarcodeResult zurück.
+    Rendert einen Barcode via Zint und gibt ein BarcodeResult zurueck.
 
     Parameters
     ----------

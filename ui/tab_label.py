@@ -22,7 +22,10 @@ if TYPE_CHECKING:
 _BASE_PX_PER_MM = 3.0
 _HANDLE_SIZE = 6
 _HANDLE_COLOR = "#3399FF"
+_HANDLE_HOVER_FILL = "#DDF0FF"
+_HANDLE_HOVER_OUTLINE = "#67B7FF"
 _GRID_MM = 5.0
+_DEFAULT_EDITOR_ZOOM = 2.75
 
 
 class LabelTab:
@@ -33,13 +36,18 @@ class LabelTab:
         self._fmt: LabelFormat | None = None
         self._objects: list[LabelObject] = []
         self._selected: list[LabelObject] = []
-        self._zoom = 1.0
+        self._zoom = _DEFAULT_EDITOR_ZOOM
         self._tool = "select"
         self._clipboard: list[LabelObject] = []
 
         self._drag_start_canvas: tuple[float, float] | None = None
         self._drag_start_mm: tuple[float, float] | None = None
         self._drag_obj_origin: dict = {}
+        self._drag_mode: str | None = None  # move | resize
+        self._active_handle: str | None = None
+        self._resize_origin: dict[str, float] = {}
+        self._hover_handle_obj: LabelObject | None = None
+        self._hover_handle_name: str | None = None
         self._creating_rect_id: int | None = None
 
         self._build_ui()
@@ -76,7 +84,7 @@ class LabelTab:
         # Mausrad-Support für die Sidebar
         def _on_mousewheel(event):
             sidebar_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        sidebar_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        sidebar_canvas.bind("<MouseWheel>", _on_mousewheel)
 
         tools = [
             ("↖ Auswahl",  "select"),
@@ -125,7 +133,7 @@ class LabelTab:
         zoom_frame.pack(fill=tk.X)
         ttk.Button(zoom_frame, text="−", width=3,
                    command=lambda: self._set_zoom(self._zoom - 0.25)).pack(side=tk.LEFT, expand=True)
-        self._zoom_label = ttk.Label(zoom_frame, text="100%", width=6, anchor=tk.CENTER)
+        self._zoom_label = ttk.Label(zoom_frame, text=f"{int(self._zoom * 100)}%", width=6, anchor=tk.CENTER)
         self._zoom_label.pack(side=tk.LEFT, expand=True)
         ttk.Button(zoom_frame, text="+", width=3,
                    command=lambda: self._set_zoom(self._zoom + 0.25)).pack(side=tk.LEFT, expand=True)
@@ -151,6 +159,9 @@ class LabelTab:
         self._canvas.bind("<ButtonPress-1>",   self._on_mouse_press)
         self._canvas.bind("<B1-Motion>",        self._on_mouse_drag)
         self._canvas.bind("<ButtonRelease-1>",  self._on_mouse_release)
+        self._canvas.bind("<Control-MouseWheel>", self._on_ctrl_mousewheel)
+        self._canvas.bind("<Control-Button-4>",  self._on_ctrl_mousewheel)  # Linux
+        self._canvas.bind("<Control-Button-5>",  self._on_ctrl_mousewheel)  # Linux
         self._canvas.bind("<Double-Button-1>",  self._on_double_click)
         self._canvas.bind("<Button-3>",         self._on_right_click)
         self._canvas.bind("<Delete>",           lambda e: self._delete_selected())
@@ -343,9 +354,9 @@ class LabelTab:
 
         # Selektions-Handles
         if is_sel:
-            self._draw_handles(cx0, cy0, cx1, cy1, tag)
+            self._draw_handles(obj, cx0, cy0, cx1, cy1, tag)
 
-    def _draw_handles(self, x0: float, y0: float, x1: float, y1: float,
+    def _draw_handles(self, obj: LabelObject, x0: float, y0: float, x1: float, y1: float,
                       parent_tag: str) -> None:
         hs = _HANDLE_SIZE
         xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
@@ -355,9 +366,12 @@ class LabelTab:
             (x0, y1, "bl"), (xm, y1, "bm"), (x1, y1, "br"),
         ]:
             htag = f"{parent_tag}_h_{hname}"
+            is_hovered = obj is self._hover_handle_obj and hname == self._hover_handle_name
             self._canvas.create_rectangle(
                 hx - hs/2, hy - hs/2, hx + hs/2, hy + hs/2,
-                fill="white", outline=_HANDLE_COLOR, width=2,
+                fill=_HANDLE_HOVER_FILL if is_hovered else "white",
+                outline=_HANDLE_HOVER_OUTLINE if is_hovered else _HANDLE_COLOR,
+                width=2,
                 tags=(htag, "handle"),
             )
 
@@ -366,6 +380,69 @@ class LabelTab:
     def _on_mouse_move(self, event) -> None:
         x_mm, y_mm = self._canvas_to_mm(event.x, event.y)
         self._coord_var.set(f"X: {x_mm:.1f} mm   Y: {y_mm:.1f} mm")
+        self._update_canvas_cursor(float(event.x), float(event.y))
+
+    def _update_canvas_cursor(self, cx: float, cy: float) -> None:
+        """Setzt kontextabhaengig den Mauszeiger im Canvas."""
+        if self._tool != "select":
+            self._set_hover_handle(None, None)
+            self._canvas.config(cursor="crosshair")
+            return
+
+        # Beim aktiven Resize Cursor am Handle festhalten.
+        if self._drag_mode == "resize" and self._active_handle:
+            obj = self._selected[0] if self._selected else None
+            self._set_hover_handle(obj, self._active_handle)
+            self._canvas.config(cursor=self._cursor_for_handle(self._active_handle))
+            return
+
+        handle_hit = self._hit_handle(cx, cy)
+        if handle_hit:
+            obj, handle = handle_hit
+            self._set_hover_handle(obj, handle)
+            self._canvas.config(cursor=self._cursor_for_handle(handle))
+            return
+
+        self._set_hover_handle(None, None)
+        hit = self._hit_test(cx, cy)
+        self._canvas.config(cursor="fleur" if hit else "arrow")
+
+    def _set_hover_handle(self, obj: LabelObject | None, handle_name: str | None) -> None:
+        """Aktualisiert den aktuell hervorgehobenen Handle und repainted nur bei Aenderung."""
+        if self._hover_handle_obj is obj and self._hover_handle_name == handle_name:
+            return
+        self._hover_handle_obj = obj
+        self._hover_handle_name = handle_name
+        self._repaint()
+
+    @staticmethod
+    def _cursor_for_handle(handle: str) -> str:
+        """Ordnet Handles passenden Resize-Cursoren zu."""
+        return {
+            "tl": "top_left_corner",
+            "br": "bottom_right_corner",
+            "tr": "top_right_corner",
+            "bl": "bottom_left_corner",
+            "ml": "sb_h_double_arrow",
+            "mr": "sb_h_double_arrow",
+            "tm": "sb_v_double_arrow",
+            "bm": "sb_v_double_arrow",
+        }.get(handle, "arrow")
+
+    def _on_ctrl_mousewheel(self, event) -> str:
+        """Zoomt mit Strg + Mausrad in den Etikett-Canvas."""
+        direction = 0
+        if hasattr(event, "delta") and event.delta:
+            direction = 1 if event.delta > 0 else -1
+        elif getattr(event, "num", None) == 4:
+            direction = 1
+        elif getattr(event, "num", None) == 5:
+            direction = -1
+
+        if direction != 0:
+            self._set_zoom(self._zoom + (0.25 * direction))
+            return "break"
+        return ""
 
     def _on_mouse_press(self, event) -> None:
         self._canvas.focus_set()
@@ -373,6 +450,24 @@ class LabelTab:
         x_mm, y_mm = self._canvas_to_mm(cx, cy)
 
         if self._tool == "select":
+            handle_hit = self._hit_handle(cx, cy)
+            if handle_hit:
+                obj, handle = handle_hit
+                if obj not in self._selected:
+                    self._selected = [obj]
+                self._drag_mode = "resize"
+                self._active_handle = handle
+                self._drag_start_canvas = (cx, cy)
+                self._resize_origin = {
+                    "x_mm": obj.x_mm,
+                    "y_mm": obj.y_mm,
+                    "width_mm": obj.width_mm,
+                    "height_mm": obj.height_mm,
+                }
+                self._repaint()
+                self._update_canvas_cursor(cx, cy)
+                return
+
             hit = self._hit_test(cx, cy)
             if hit:
                 if event.state & 0x0001:  # Shift
@@ -383,14 +478,17 @@ class LabelTab:
                 else:
                     if hit not in self._selected:
                         self._selected = [hit]
+                self._drag_mode = "move"
                 self._drag_start_canvas = (cx, cy)
                 self._drag_obj_origin = {
                     o.id: (o.x_mm, o.y_mm) for o in self._selected
                 }
             else:
                 self._selected = []
+                self._drag_mode = None
                 self._drag_start_canvas = (cx, cy)
             self._repaint()
+            self._update_canvas_cursor(cx, cy)
         else:
             # Erstellen eines neuen Objekts
             self._drag_start_canvas = (cx, cy)
@@ -402,7 +500,14 @@ class LabelTab:
         cx, cy = float(event.x), float(event.y)
 
         if self._tool == "select" and self._drag_start_canvas:
-            if self._selected and self._drag_obj_origin:
+            if self._drag_mode == "resize" and self._selected and self._active_handle and self._resize_origin:
+                obj = self._selected[0]
+                dx_mm = self._to_mm(cx - self._drag_start_canvas[0])
+                dy_mm = self._to_mm(cy - self._drag_start_canvas[1])
+                self._apply_resize(obj, self._active_handle, dx_mm, dy_mm)
+                self._repaint()
+                self._update_canvas_cursor(cx, cy)
+            elif self._drag_mode == "move" and self._selected and self._drag_obj_origin:
                 dx_mm = self._to_mm(cx - self._drag_start_canvas[0])
                 dy_mm = self._to_mm(cy - self._drag_start_canvas[1])
                 for obj in self._selected:
@@ -410,7 +515,12 @@ class LabelTab:
                     obj.x_mm = max(0.0, round(ox + dx_mm, 1))
                     obj.y_mm = max(0.0, round(oy + dy_mm, 1))
                 self._repaint()
+                self._update_canvas_cursor(cx, cy)
         elif self._tool != "select" and self._creating_rect_id:
+            if self._tool == "barcode2d":
+                cx, cy = self._square_drag_endpoint(
+                    self._drag_start_canvas[0], self._drag_start_canvas[1], cx, cy
+                )
             self._canvas.coords(
                 self._creating_rect_id,
                 self._drag_start_canvas[0], self._drag_start_canvas[1], cx, cy,
@@ -420,19 +530,32 @@ class LabelTab:
         cx, cy = float(event.x), float(event.y)
 
         if self._tool == "select":
-            # Speichern verschobener Objekte
+            # Speichern verschobener oder skalierter Objekte
             for obj in self._selected:
                 if obj.id is not None:
                     repo.update_label_object(obj)
-            self.app.mark_changed()
+            if self._drag_mode in ("move", "resize"):
+                self.app.mark_changed()
             self._drag_start_canvas = None
+            self._drag_mode = None
+            self._active_handle = None
+            self._resize_origin = {}
+            self._drag_obj_origin = {}
+            self._update_canvas_cursor(cx, cy)
 
         elif self._tool != "select" and self._drag_start_canvas:
             sx, sy = self._drag_start_canvas
+            if self._tool == "barcode2d":
+                cx, cy = self._square_drag_endpoint(sx, sy, cx, cy)
             x0_mm, y0_mm = self._canvas_to_mm(min(sx, cx), min(sy, cy))
             x1_mm, y1_mm = self._canvas_to_mm(max(sx, cx), max(sy, cy))
             w_mm = max(5.0, x1_mm - x0_mm)
             h_mm = max(3.0, y1_mm - y0_mm)
+
+            if self._tool == "barcode2d":
+                side_mm = max(5.0, max(w_mm, h_mm))
+                w_mm = side_mm
+                h_mm = side_mm
 
             if self._creating_rect_id:
                 self._canvas.delete(self._creating_rect_id)
@@ -464,6 +587,16 @@ class LabelTab:
             # Direkt Eigenschaften öffnen
             self._edit_properties()
 
+    @staticmethod
+    def _square_drag_endpoint(sx: float, sy: float, cx: float, cy: float) -> tuple[float, float]:
+        """Zwingt das Aufziehen auf ein Quadrat (fuer 2D-Barcodes)."""
+        dx = cx - sx
+        dy = cy - sy
+        side = max(abs(dx), abs(dy))
+        ex = sx + (side if dx >= 0 else -side)
+        ey = sy + (side if dy >= 0 else -side)
+        return ex, ey
+
     def _on_double_click(self, _event) -> None:
         self._edit_properties()
 
@@ -487,6 +620,116 @@ class LabelTab:
             if x0 - 3 <= cx <= x1 + 3 and y0 - 3 <= cy <= y1 + 3:
                 return obj
         return None
+
+    def _hit_handle(self, cx: float, cy: float) -> tuple[LabelObject, str] | None:
+        """Prueft, ob ein Selektions-Handle getroffen wurde."""
+        if len(self._selected) != 1:
+            return None
+        obj = self._selected[0]
+        x0, y0 = self._mm_to_canvas(obj.x_mm, obj.y_mm)
+        x1 = x0 + self._to_px(obj.width_mm)
+        y1 = y0 + self._to_px(obj.height_mm)
+        hs = _HANDLE_SIZE
+        tol = max(3.0, hs / 2 + 1)
+        xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
+        for hx, hy, name in [
+            (x0, y0, "tl"), (xm, y0, "tm"), (x1, y0, "tr"),
+            (x0, ym, "ml"),                  (x1, ym, "mr"),
+            (x0, y1, "bl"), (xm, y1, "bm"), (x1, y1, "br"),
+        ]:
+            if abs(cx - hx) <= tol and abs(cy - hy) <= tol:
+                return obj, name
+        return None
+
+    def _apply_resize(self, obj: LabelObject, handle: str, dx_mm: float, dy_mm: float) -> None:
+        """Skaliert ein Objekt anhand des angefassten Handle-Namens."""
+        min_w = 1.0
+        min_h = 1.0
+        ox = self._resize_origin["x_mm"]
+        oy = self._resize_origin["y_mm"]
+        ow = self._resize_origin["width_mm"]
+        oh = self._resize_origin["height_mm"]
+
+        x = ox
+        y = oy
+        w = ow
+        h = oh
+
+        if "l" in handle:
+            x = ox + dx_mm
+            w = ow - dx_mm
+        if "r" in handle:
+            w = ow + dx_mm
+        if "t" in handle:
+            y = oy + dy_mm
+            h = oh - dy_mm
+        if "b" in handle:
+            h = oh + dy_mm
+
+        if w < min_w:
+            if "l" in handle:
+                x = ox + (ow - min_w)
+            w = min_w
+        if h < min_h:
+            if "t" in handle:
+                y = oy + (oh - min_h)
+            h = min_h
+
+        if self._is_square_2d_barcode(obj):
+            min_side = 5.0
+            side = max(min_side, max(w, h))
+
+            left = ox
+            top = oy
+            right = ox + ow
+            bottom = oy + oh
+
+            if handle == "tl":
+                x = right - side
+                y = bottom - side
+            elif handle == "tm":
+                x = left
+                y = bottom - side
+            elif handle == "tr":
+                x = left
+                y = bottom - side
+            elif handle == "ml":
+                x = right - side
+                y = top
+            elif handle == "mr":
+                x = left
+                y = top
+            elif handle == "bl":
+                x = right - side
+                y = top
+            elif handle == "bm":
+                x = left
+                y = top
+            elif handle == "br":
+                x = left
+                y = top
+
+            w = side
+            h = side
+
+        obj.x_mm = max(0.0, round(x, 1))
+        obj.y_mm = max(0.0, round(y, 1))
+        obj.width_mm = round(w, 1)
+        obj.height_mm = round(h, 1)
+
+    @staticmethod
+    def _is_square_2d_barcode(obj: LabelObject) -> bool:
+        """Erkennt 2D-Barcodes, die beim Resizen quadratisch bleiben sollen."""
+        if obj.type != "barcode":
+            return False
+        from barcode_engine.zint_wrapper import (
+            BARCODE_QRCODE,
+            BARCODE_DATAMATRIX,
+            BARCODE_AZTEC,
+            BARCODE_MAXICODE,
+        )
+        btype = int(obj.properties.get("barcode_type", 0))
+        return btype in {BARCODE_QRCODE, BARCODE_DATAMATRIX, BARCODE_AZTEC, BARCODE_MAXICODE}
 
     # ─── Aktionen ─────────────────────────────────────────────────────────────
 
