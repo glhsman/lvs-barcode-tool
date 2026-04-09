@@ -25,6 +25,8 @@ password = <Passwort>
 database = barcode
 ```
 
+Etikett-Templates in `label_templates.json` anpassen (liegt neben der EXE bzw. im Projektordner). Neue Templates können ohne Code-Änderung ergänzt werden – das Programm lädt die Datei bei jedem Öffnen des Format-Dialogs neu.
+
 ## Einrichtung (einmalig)
 
 ```powershell

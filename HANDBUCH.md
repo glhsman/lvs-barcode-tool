@@ -35,11 +35,14 @@ Bevor du Daten eingibst, musst du dem Programm sagen, was du speichern willst:
 ### Schritt C: Das Etikett Format wählen (optional)
 Im **Reiter „Etikett"** → **„Format"**-Dialog findest du vordefinierte **Label-Templates**:
 - **Versandetikett 100×50 mm** – Standard-Kleinetiketten
-- **Zweckform 3659** – A4-Bogen mit 3×4 Etiketten
-- **Zweckform 3474** – A4-Bogen mit 4×5 Etiketten  
-- **A6 Etikett** – Größere Versandlabel (148×105 mm)
+- **A4 Zweckform 3659 (48,5×25,4 mm)** – A4-Bogen mit 4 Spalten × 11 Reihen (44 Etiketten)
+- **A4 Zweckform 3474 (105×70 mm)** – A4-Bogen mit 2 Spalten × 4 Reihen (8 Etiketten)
+- **A6 Etikett (105×148 mm)** – Großes Versandlabel
+- **Vorlage LVS-Etikett (105×148 mm)** – Firmenvorlage für LVS-Etiketten
 
 Wähle ein Template aus der Dropdown-Liste und klicke **„Übernehmen"**, um Größe und Layout automatisch zu setzen. Du kannst die Werte anschließend manuell anpassen.
+
+> **Tipp:** Die Template-Liste wird aus der Datei `label_templates.json` geladen, die neben der Anwendung liegt. Du kannst dort eigene Templates hinzufügen oder bestehende anpassen – ohne Programmierkenntnisse und ohne Neustart der Anwendung.
 
 ### Schritt D: Das Etikett gestalten (Reiter „Etikett")
 Hier zeichnest du dein Layout:
