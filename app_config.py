@@ -45,5 +45,9 @@ def get_username() -> str:
     name = ""
     if _cfg.has_section("app"):
         name = _cfg.get("app", "username", fallback="").strip(' "\'')
-    
+
     return name or os.getenv("USERNAME") or os.getenv("USER") or "unknown"
+
+
+def get_templates_file() -> Path:
+    return _BASE_DIR / "label_templates.json"

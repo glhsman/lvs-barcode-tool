@@ -1,105 +1,33 @@
 """Dialog zur Konfiguration des Etikettenformats (Abmessungen, Ränder, Reihen/Spalten)."""
 from __future__ import annotations
 
+import json
 import tkinter as tk
 from tkinter import ttk
 
+import app_config
 from models.types import LabelFormat
 
 
-LABEL_TEMPLATES: list[tuple[str, dict[str, float | int | str]]] = [
-    (
-        "Versandetikett 100 x 50 mm",
-        {
-            "manufacturer": "Generic",
-            "product_name": "Versandetikett 100x50",
-            "width_mm": 100.0,
-            "height_mm": 50.0,
-            "margin_top_mm": 2.0,
-            "margin_bottom_mm": 2.0,
-            "margin_left_mm": 2.0,
-            "margin_right_mm": 2.0,
-            "cols": 1,
-            "rows": 1,
-            "col_gap_mm": 0.0,
-            "row_gap_mm": 0.0,
-        },
-    ),
-    (
-        "A4 Zweckform 3659 (48.5 x 25.4 mm)",
-        {
-            "manufacturer": "Zweckform",
-            "product_name": "3659",
-            "width_mm": 48.5,
-            "height_mm": 25.4,
-            "margin_top_mm": 10.0,
-            "margin_bottom_mm": 10.0,
-            "margin_left_mm": 7.5,
-            "margin_right_mm": 7.5,
-            "cols": 4,
-            "rows": 11,
-            "col_gap_mm": 0.0,
-            "row_gap_mm": 0.0,
-        },
-    ),
-    (
-        "A4 Zweckform 3474 (105 x 70 mm)",
-        {
-            "manufacturer": "Zweckform",
-            "product_name": "3474",
-            "width_mm": 105.0,
-            "height_mm": 70.0,
-            "margin_top_mm": 8.5,
-            "margin_bottom_mm": 8.5,
-            "margin_left_mm": 0.0,
-            "margin_right_mm": 0.0,
-            "cols": 2,
-            "rows": 4,
-            "col_gap_mm": 0.0,
-            "row_gap_mm": 0.0,
-        },
-    ),
-    (
-        "A6 Etikett 105 x 148 mm",
-        {
-            "manufacturer": "Generic",
-            "product_name": "A6",
-            "width_mm": 105.0,
-            "height_mm": 148.0,
-            "margin_top_mm": 2.0,
-            "margin_bottom_mm": 2.0,
-            "margin_left_mm": 2.0,
-            "margin_right_mm": 2.0,
-            "cols": 1,
-            "rows": 1,
-            "col_gap_mm": 0.0,
-            "row_gap_mm": 0.0,
-        },
-    ),
+def _load_templates() -> list[tuple[str, dict[str, float | int | str]]]:
+    path = app_config.get_templates_file()
+    if not path.exists():
+        return []
+    try:
+        with path.open(encoding="utf-8") as fh:
+            entries = json.load(fh)
+        return [(e["name"], {k: v for k, v in e.items() if k != "name"}) for e in entries]
+    except Exception:
+        return []
 
-    (
-        "Vorlage LVS-Etikett 105 x 148 mm",
-        {
-            "manufacturer": "Generic",
-            "product_name": "LVS",
-            "width_mm": 105.0,
-            "height_mm": 148.0,
-            "margin_top_mm": 2.0,
-            "margin_bottom_mm": 2.0,
-            "margin_left_mm": 2.0,
-            "margin_right_mm": 2.0,
-            "cols": 1,
-            "rows": 1,
-            "col_gap_mm": 0.0,
-            "row_gap_mm": 0.0,
-        },
-    ),
-]
+
+LABEL_TEMPLATES: list[tuple[str, dict[str, float | int | str]]] = _load_templates()
 
 class LabelFormatDialog:
     def __init__(self, parent: tk.Widget, fmt: LabelFormat):
         self._fmt = fmt
         self.changed = False
+        self._templates = _load_templates()
 
         self._win = tk.Toplevel(parent)
         self._win.title("Etikettenformat")
@@ -134,7 +62,7 @@ class LabelFormatDialog:
         self._template_combo = ttk.Combobox(
             f,
             textvariable=self._template_var,
-            values=["Benutzerdefiniert"] + [name for name, _ in LABEL_TEMPLATES],
+            values=["Benutzerdefiniert"] + [name for name, _ in self._templates],
             state="readonly",
             width=34,
         )
@@ -199,7 +127,7 @@ class LabelFormatDialog:
 
     def _apply_template(self) -> None:
         selected = self._template_var.get()
-        template_map = {name: values for name, values in LABEL_TEMPLATES}
+        template_map = {name: values for name, values in self._templates}
         values = template_map.get(selected)
         if not values:
             return
