@@ -275,7 +275,7 @@ class MainWindow:
         messagebox.showinfo(
             "Über Drinkport-Barcode – Python Edition",
             "Drinkport-Barcode – Python Edition\n"
-            "Version 1.3\n"
+            "Version 1.4\n"
             "Moderne Lösung für Lagerbeschriftungen\n\n"
             "Barcode-Engine: Python Native (barcode/qrcode)\n"
             "Datenbank: MariaDB\n"

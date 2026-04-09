@@ -74,4 +74,4 @@ Hier zeichnest du dein Layout:
 *   **Keine DLL nötig:** Dieses Programm nutzt eine integrierte Python-Engine für Barcodes.
 
 ---
-*Version 1.3 / April 2026*
+*Version 1.4 / April 2026*

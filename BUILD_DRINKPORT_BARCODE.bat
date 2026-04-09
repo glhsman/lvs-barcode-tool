@@ -2,7 +2,7 @@
 setlocal
 color 0B
 echo ==================================================
-echo RADIKAL-BUILD: Drinkport-Barcode (v1.3)
+echo RADIKAL-BUILD: Drinkport-Barcode (v1.4)
 echo ==================================================
 echo.
 
@@ -43,6 +43,7 @@ echo 3. Erstelle App-Ordner (dist/Drinkport-Barcode)...
     --name="Drinkport-Barcode" ^
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
+    --add-data "label_templates.json;." ^
     --collect-all sv_ttk ^
     --collect-all mysql.connector ^
     --hidden-import win32timezone ^

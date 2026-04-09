@@ -27,7 +27,8 @@ cmd = [
     "--noconsole",
     "--onefile",
     f"--name={PROJECT_NAME}",
-    f"--add-data={theme_path};sv_ttk/theme", 
+    f"--add-data={theme_path};sv_ttk/theme",
+    "--add-data=label_templates.json;.",
     "--collect-all=mysql.connector",
     "--collect-all=sv_ttk",
     "--hidden-import=win32timezone", # Oft vergessen von PyInstaller

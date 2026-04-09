@@ -4,7 +4,7 @@
 [Setup]
 AppId={{D1BB882B-79CE-420C-AADE-18755BB14253}}
 AppName=Drinkport-Barcode
-AppVersion=1.3
+AppVersion=1.4
 AppPublisher=Drinkport KG
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -25,6 +25,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; Alle Dateien aus dem dist-Ordner rekursiv einbeziehen
 Source: "dist\Drinkport-Barcode\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Label-Templates (wird beim Öffnen des Format-Dialogs neu geladen)
+Source: "label_templates.json"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Erzeuge bei Erstinstallation eine config.ini aus der Vorlage, ohne bestehende Datei zu ueberschreiben
 Source: "example_config.ini"; DestDir: "{app}"; DestName: "config.ini"; Flags: onlyifdoesntexist
