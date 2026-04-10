@@ -24,6 +24,7 @@ echo Baue Debug-EXE...
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
     --add-data "label_templates.json;." ^
+    --add-data "HANDBUCH.html;." ^
     --collect-all sv_ttk ^
     --collect-all mysql.connector ^
     --hidden-import win32timezone ^

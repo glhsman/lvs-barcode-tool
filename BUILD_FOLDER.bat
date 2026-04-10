@@ -17,10 +17,17 @@ echo Baue den Drinkport-Barcode Ordner...
     --name="Drinkport-Barcode" ^
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
+    --add-data "label_templates.json;." ^
+    --add-data "HANDBUCH.html;." ^
     --collect-all sv_ttk ^
     --collect-all mysql.connector ^
     --hidden-import win32timezone ^
     main.py
+
+echo.
+:: Finale Kopien
+copy /y "HANDBUCH.html" "dist\Drinkport-Barcode\" >nul
+copy /y "label_templates.json" "dist\Drinkport-Barcode\" >nul
 
 echo.
 echo ==================================================

@@ -73,5 +73,20 @@
     "rows": 1,
     "col_gap_mm": 0.0,
     "row_gap_mm": 0.0
+  },
+  {
+    "name": "QL-500 90 x 29 mm",
+    "manufacturer": "Brother",
+    "product_name": "QL-500 29x90",
+    "width_mm": 90.0,
+    "height_mm": 29.0,
+    "margin_top_mm": 2.0,
+    "margin_bottom_mm": 2.0,
+    "margin_left_mm": 2.0,
+    "margin_right_mm": 2.0,
+    "cols": 1,
+    "rows": 1,
+    "col_gap_mm": 0.0,
+    "row_gap_mm": 0.0
   }
 ]

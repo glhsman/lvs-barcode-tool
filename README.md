@@ -1,6 +1,13 @@
-# 🏷️ Drinkport-Barcode – Python Edition v1.4
+# 🏷️ Drinkport-Barcode – Python Edition v1.5
 
 Ein professioneller Etikett-Editor mit Datenbankanbindung, Barcode-Integration und Python/Tkinter-Frontend.
+
+## Neu in Version 1.5
+
+- **WYSIWYG Etiketten-Editor:** Vollständige Überarbeitung der Vorschau zur Beseitigung von Skalierungsproblemen zwischen Editor und Druck.
+- **Präzisere Formatierung:** Verbesserte Handhabung von Schriftarten, Textausrichtung und Stilvorgaben.
+- **Integrierte Hilfe:** Direkter Zugriff auf das Benutzerhandbuch (`HANDBUCH.html`) aus der Anwendung heraus (Menü Hilfe).
+- **Setup-Optimierung:** Handbuch wird nun automatisch mitinstalliert und im Paket ausgeliefert.
 
 ## Verfügbare Versionen
 

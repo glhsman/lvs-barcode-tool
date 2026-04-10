@@ -2,7 +2,7 @@
 setlocal
 color 0B
 echo ==================================================
-echo RADIKAL-BUILD: Drinkport-Barcode (v1.4)
+echo RADIKAL-BUILD: Drinkport-Barcode (v1.5)
 echo ==================================================
 echo.
 
@@ -44,6 +44,7 @@ echo 3. Erstelle App-Ordner (dist/Drinkport-Barcode)...
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
     --add-data "label_templates.json;." ^
+    --add-data "HANDBUCH.html;." ^
     --collect-all sv_ttk ^
     --collect-all mysql.connector ^
     --hidden-import win32timezone ^
@@ -55,6 +56,12 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+
+echo.
+:: 4. Finale Dateien sicherstellen (Kopieren in den Root-Ordner für Inno Setup)
+echo 4. Kopiere Handbuch und Vorlagen in den Programm-Ordner...
+copy /y "HANDBUCH.html" "dist\Drinkport-Barcode\" >nul
+copy /y "label_templates.json" "dist\Drinkport-Barcode\" >nul
 
 echo.
 echo ==================================================

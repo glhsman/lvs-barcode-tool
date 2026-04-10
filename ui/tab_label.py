@@ -26,6 +26,10 @@ _HANDLE_HOVER_FILL = "#DDF0FF"
 _HANDLE_HOVER_OUTLINE = "#67B7FF"
 _GRID_MM = 5.0
 _DEFAULT_EDITOR_ZOOM = 2.75
+_RULER_SIZE = 26
+_RULER_BG = "#252526"
+_RULER_FG = "#969696"
+_RULER_TICK = "#555555"
 
 
 class LabelTab:
@@ -105,7 +109,7 @@ class LabelTab:
 
         ttk.Separator(tool_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=6)
 
-        ttk.Button(tool_frame, text="Format …", width=14,
+        ttk.Button(tool_frame, text="Etikett …", width=14,
                    command=self._edit_format).pack(pady=2, fill=tk.X)
         ttk.Button(tool_frame, text="Löschen",  width=14,
                    command=self._delete_selected).pack(pady=2, fill=tk.X)
@@ -138,22 +142,53 @@ class LabelTab:
         ttk.Button(zoom_frame, text="+", width=3,
                    command=lambda: self._set_zoom(self._zoom + 0.25)).pack(side=tk.LEFT, expand=True)
 
-        # Canvas mit Scrollbars
+        # Canvas mit Scrollbars und Linealen
         canvas_container = ttk.Frame(self.frame)
         canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        canvas_container.grid_rowconfigure(1, weight=1)
+        canvas_container.grid_columnconfigure(1, weight=1)
+
+        # Eck-Füllsel (oben links)
+        self._ruler_corner = tk.Canvas(canvas_container, width=_RULER_SIZE, height=_RULER_SIZE,
+                                       bg=_RULER_BG, highlightthickness=0)
+        self._ruler_corner.grid(row=0, column=0, sticky="nsew")
+
+        # Top Ruler
+        self._ruler_top = tk.Canvas(canvas_container, height=_RULER_SIZE,
+                                    bg=_RULER_BG, highlightthickness=0)
+        self._ruler_top.grid(row=0, column=1, sticky="ew")
+
+        # Left Ruler
+        self._ruler_left = tk.Canvas(canvas_container, width=_RULER_SIZE,
+                                     bg=_RULER_BG, highlightthickness=0)
+        self._ruler_left.grid(row=1, column=0, sticky="ns")
 
         self._canvas = tk.Canvas(canvas_container, bg="#1e1e1e",
                                  highlightthickness=0, borderwidth=0,
                                  cursor="crosshair")
-        vsb = ttk.Scrollbar(canvas_container, orient=tk.VERTICAL,
-                            command=self._canvas.yview)
-        hsb = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL,
-                            command=self._canvas.xview)
-        self._canvas.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self._canvas.grid(row=1, column=1, sticky="nsew")
 
-        vsb.pack(side=tk.RIGHT, fill=tk.Y)
-        hsb.pack(side=tk.BOTTOM, fill=tk.X)
-        self._canvas.pack(fill=tk.BOTH, expand=True)
+        vsb = ttk.Scrollbar(canvas_container, orient=tk.VERTICAL,
+                            command=self._on_vsync)
+        vsb.grid(row=1, column=2, sticky="ns")
+
+        hsb = ttk.Scrollbar(canvas_container, orient=tk.HORIZONTAL,
+                            command=self._on_hsync)
+        hsb.grid(row=2, column=1, sticky="ew")
+
+        self._vsb = vsb
+        self._hsb = hsb
+
+        def _set_v_scroll(*args):
+            vsb.set(*args)
+            self._ruler_left.yview_moveto(args[0])
+
+        def _set_h_scroll(*args):
+            hsb.set(*args)
+            self._ruler_top.xview_moveto(args[0])
+
+        self._canvas.configure(yscrollcommand=_set_v_scroll, xscrollcommand=_set_h_scroll)
 
         # Canvas-Events
         self._canvas.bind("<ButtonPress-1>",   self._on_mouse_press)
@@ -244,6 +279,7 @@ class LabelTab:
         for obj in sorted(self._objects, key=lambda o: o.z_order):
             self._draw_object(obj)
         self._update_scroll_region()
+        self._draw_rulers()
 
     def _update_scroll_region(self) -> None:
         if not self._fmt:
@@ -252,6 +288,54 @@ class LabelTab:
         w = ox + self._to_px(self._fmt.width_mm) + 30
         h = oy + self._to_px(self._fmt.height_mm) + 30
         self._canvas.config(scrollregion=(0, 0, w, h))
+        self._ruler_top.config(scrollregion=(0, 0, w, h))
+        self._ruler_left.config(scrollregion=(0, 0, w, h))
+
+    def _on_vsync(self, *args) -> None:
+        self._canvas.yview(*args)
+        self._ruler_left.yview(*args)
+
+    def _on_hsync(self, *args) -> None:
+        self._canvas.xview(*args)
+        self._ruler_top.xview(*args)
+
+    def _draw_rulers(self) -> None:
+        if not self._fmt:
+            return
+        
+        self._ruler_top.delete("all")
+        self._ruler_left.delete("all")
+        
+        ox, oy = self._label_origin()
+        w_mm = self._fmt.width_mm
+        h_mm = self._fmt.height_mm
+        ppm = self._px_per_mm()
+        
+        font = ("Arial", 7)
+        
+        # Horizontale Skala
+        for i in range(int(w_mm) + 1):
+            cx = ox + i * ppm
+            if i % 10 == 0:
+                self._ruler_top.create_line(cx, 10, cx, _RULER_SIZE, fill=_RULER_FG)
+                self._ruler_top.create_text(cx + 2, 2, text=str(i), anchor=tk.NW, fill=_RULER_FG, font=font)
+            elif i % 5 == 0:
+                self._ruler_top.create_line(cx, 15, cx, _RULER_SIZE, fill=_RULER_FG)
+            else:
+                if self._zoom >= 1.5: # Ticks nur bei ausreichend Zoom
+                    self._ruler_top.create_line(cx, 20, cx, _RULER_SIZE, fill=_RULER_TICK)
+
+        # Vertikale Skala
+        for i in range(int(h_mm) + 1):
+            cy = oy + i * ppm
+            if i % 10 == 0:
+                self._ruler_left.create_line(10, cy, _RULER_SIZE, cy, fill=_RULER_FG)
+                self._ruler_left.create_text(2, cy + 2, text=str(i), anchor=tk.NW, fill=_RULER_FG, font=font)
+            elif i % 5 == 0:
+                self._ruler_left.create_line(15, cy, _RULER_SIZE, cy, fill=_RULER_FG)
+            else:
+                if self._zoom >= 1.5:
+                    self._ruler_left.create_line(20, cy, _RULER_SIZE, cy, fill=_RULER_TICK)
 
     def _draw_label_background(self) -> None:
         ox, oy = self._label_origin()
@@ -307,13 +391,45 @@ class LabelTab:
         if obj.type == "text":
             p = obj.properties
             text = p.get("text", "Text")
+            bg_color = p.get("bg_color") or "#ffffc0"
             self._canvas.create_rectangle(cx0, cy0, cx1, cy1,
-                                          fill="#ffffc0", outline=outline,
+                                          fill=bg_color, outline=outline,
                                           width=2 if is_sel else 1, tags=tag)
+            
+            # Font-Formatierung
+            family = p.get("font_family", "Arial")
+            size_pt = p.get("font_size", 10)
+            # Umrechnung pt -> mm -> px im Editor
+            # Wir nutzen einen negativen Wert, damit Tkinter die Groesse in Pixeln interpretiert (wichtig fuer WYSIWYG/Zoom)
+            size_px = max(4, int(size_pt * 0.3528 * _BASE_PX_PER_MM * self._zoom))
+            
+            font_mods = []
+            if p.get("bold"): font_mods.append("bold")
+            if p.get("italic"): font_mods.append("italic")
+            if p.get("underline"): font_mods.append("underline")
+            
+            font_spec: tuple
+            if font_mods:
+                font_spec = (family, -size_px, " ".join(font_mods))
+            else:
+                font_spec = (family, -size_px)
+
+            # Ausrichtung
+            align = p.get("align", "left")
+            if align == "center":
+                anchor = tk.CENTER
+                tx = (cx0 + cx1) / 2
+            elif align == "right":
+                anchor = tk.E
+                tx = cx1 - 2
+            else:
+                anchor = tk.W
+                tx = cx0 + 2
+            
             self._canvas.create_text(
-                cx0 + 4, (cy0 + cy1) / 2, text=text[:40],
-                anchor=tk.W, fill=p.get("color", "#000000"),
-                font=("Arial", max(8, int(9 * self._zoom))), tags=tag,
+                tx, (cy0 + cy1) / 2, text=text[:100],
+                anchor=anchor, fill=p.get("color", "#000000"),
+                font=font_spec, tags=tag,
             )
         elif obj.type in ("barcode", "barcode2d"):
             self._canvas.create_rectangle(cx0, cy0, cx1, cy1,
@@ -324,7 +440,7 @@ class LabelTab:
                 (cx0 + cx1) / 2, (cy0 + cy1) / 2,
                 text=f"▌▐▌▌▐▌\n{bc_num[:20]}",
                 anchor=tk.CENTER, fill="#333333",
-                font=("Courier", max(7, int(8 * self._zoom))), tags=tag,
+                font=("Courier", -max(7, int(8 * self._zoom))), tags=tag,
             )
         elif obj.type == "image":
             self._canvas.create_rectangle(cx0, cy0, cx1, cy1,
@@ -378,9 +494,18 @@ class LabelTab:
     # ─── Mouse-Events ──────────────────────────────────────────────────────────
 
     def _on_mouse_move(self, event) -> None:
-        x_mm, y_mm = self._canvas_to_mm(event.x, event.y)
+        cx = self._canvas.canvasx(event.x)
+        cy = self._canvas.canvasy(event.y)
+        x_mm, y_mm = self._canvas_to_mm(cx, cy)
         self._coord_var.set(f"X: {x_mm:.1f} mm   Y: {y_mm:.1f} mm")
-        self._update_canvas_cursor(float(event.x), float(event.y))
+        self._update_canvas_cursor(cx, cy)
+        self._update_ruler_markers(cx, cy)
+
+    def _update_ruler_markers(self, cx: float, cy: float) -> None:
+        self._ruler_top.delete("marker")
+        self._ruler_left.delete("marker")
+        self._ruler_top.create_line(cx, 0, cx, _RULER_SIZE, fill="white", tags="marker", width=1)
+        self._ruler_left.create_line(0, cy, _RULER_SIZE, cy, fill="white", tags="marker", width=1)
 
     def _update_canvas_cursor(self, cx: float, cy: float) -> None:
         """Setzt kontextabhaengig den Mauszeiger im Canvas."""
@@ -446,7 +571,8 @@ class LabelTab:
 
     def _on_mouse_press(self, event) -> None:
         self._canvas.focus_set()
-        cx, cy = float(event.x), float(event.y)
+        cx = float(self._canvas.canvasx(event.x))
+        cy = float(self._canvas.canvasy(event.y))
         x_mm, y_mm = self._canvas_to_mm(cx, cy)
 
         if self._tool == "select":
@@ -470,7 +596,7 @@ class LabelTab:
 
             hit = self._hit_test(cx, cy)
             if hit:
-                if event.state & 0x0001:  # Shift
+                if event.state & 0x0001 or event.state & 0x0004:  # Shift oder Strg (Windows/Linux)
                     if hit in self._selected:
                         self._selected.remove(hit)
                     else:
@@ -497,7 +623,10 @@ class LabelTab:
             )
 
     def _on_mouse_drag(self, event) -> None:
-        cx, cy = float(event.x), float(event.y)
+        cx = float(self._canvas.canvasx(event.x))
+        cy = float(self._canvas.canvasy(event.y))
+        
+        self._update_ruler_markers(cx, cy)
 
         if self._tool == "select" and self._drag_start_canvas:
             if self._drag_mode == "resize" and self._selected and self._active_handle and self._resize_origin:
@@ -527,7 +656,8 @@ class LabelTab:
             )
 
     def _on_mouse_release(self, event) -> None:
-        cx, cy = float(event.x), float(event.y)
+        cx = float(self._canvas.canvasx(event.x))
+        cy = float(self._canvas.canvasy(event.y))
 
         if self._tool == "select":
             # Speichern verschobener oder skalierter Objekte
@@ -601,7 +731,8 @@ class LabelTab:
         self._edit_properties()
 
     def _on_right_click(self, event) -> None:
-        cx, cy = float(event.x), float(event.y)
+        cx = float(self._canvas.canvasx(event.x))
+        cy = float(self._canvas.canvasy(event.y))
         hit = self._hit_test(cx, cy)
         if hit and hit not in self._selected:
             self._selected = [hit]
@@ -791,24 +922,34 @@ class LabelTab:
     def _align(self, how: str) -> None:
         if not self._selected or not self._fmt:
             return
-        ref = self._selected[0]
+        
+        multi = len(self._selected) > 1
+        
+        # Extremwerte der Selektion ermitteln (für relatives Ausrichten)
+        min_x = min(o.x_mm for o in self._selected)
+        max_x = max(o.x_mm + o.width_mm for o in self._selected)
+        min_y = min(o.y_mm for o in self._selected)
+        max_y = max(o.y_mm + o.height_mm for o in self._selected)
+        mid_x = (min_x + max_x) / 2
+        mid_y = (min_y + max_y) / 2
+
         for obj in self._selected:
             if how == "left":
-                obj.x_mm = ref.x_mm if len(self._selected) > 1 else 0.0
+                obj.x_mm = min_x if multi else 0.0
             elif how == "right":
-                obj.x_mm = ref.x_mm + ref.width_mm - obj.width_mm if len(self._selected) > 1 \
-                           else self._fmt.width_mm - obj.width_mm
+                obj.x_mm = (max_x - obj.width_mm) if multi else (self._fmt.width_mm - obj.width_mm)
             elif how == "top":
-                obj.y_mm = ref.y_mm if len(self._selected) > 1 else 0.0
+                obj.y_mm = min_y if multi else 0.0
             elif how == "bottom":
-                obj.y_mm = ref.y_mm + ref.height_mm - obj.height_mm if len(self._selected) > 1 \
-                           else self._fmt.height_mm - obj.height_mm
+                obj.y_mm = (max_y - obj.height_mm) if multi else (self._fmt.height_mm - obj.height_mm)
             elif how == "hcenter":
-                obj.x_mm = (self._fmt.width_mm - obj.width_mm) / 2
+                obj.x_mm = (mid_x - obj.width_mm / 2) if multi else (self._fmt.width_mm - obj.width_mm) / 2
             elif how == "vcenter":
-                obj.y_mm = (self._fmt.height_mm - obj.height_mm) / 2
+                obj.y_mm = (mid_y - obj.height_mm / 2) if multi else (self._fmt.height_mm - obj.height_mm) / 2
+            
             if obj.id is not None:
                 repo.update_label_object(obj)
+        
         self.app.mark_changed()
         self._repaint()
 

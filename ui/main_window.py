@@ -67,6 +67,7 @@ class MainWindow:
         menubar.add_cascade(label="Einstellungen", menu=m_settings)
 
         m_help = tk.Menu(menubar, tearoff=False)
+        m_help.add_command(label="Handbuch (HTML)",    command=self._show_manual)
         m_help.add_command(label="Über …",             command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=m_help)
 
@@ -275,9 +276,33 @@ class MainWindow:
         messagebox.showinfo(
             "Über Drinkport-Barcode – Python Edition",
             "Drinkport-Barcode – Python Edition\n"
-            "Version 1.4\n"
+            "Version 1.5\n"
             "Moderne Lösung für Lagerbeschriftungen\n\n"
             "Barcode-Engine: Python Native (barcode/qrcode)\n"
             "Datenbank: MariaDB\n"
             f"Benutzer: {app_config.get_username()}",
         )
+
+    def _show_manual(self) -> None:
+        """Öffnet das Benutzerhandbuch (HANDBUCH.html) im Browser."""
+        import webbrowser
+        import os
+        import sys
+
+        # Pfad zum Handbuch ermitteln (PyInstaller-kompatibel)
+        if getattr(sys, 'frozen', False):
+            # Wenn als exe eingefroren, ist der Pfad in sys._MEIPASS (onedir/onefile)
+            base_path = sys._MEIPASS
+        else:
+            # Im Entwicklungsmodus
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        manual_path = os.path.join(base_path, "HANDBUCH.html")
+
+        if os.path.exists(manual_path):
+            webbrowser.open(f"file:///{os.path.abspath(manual_path)}")
+        else:
+            messagebox.showerror(
+                "Fehler",
+                f"Handbuch nicht gefunden unter:\n{manual_path}"
+            )

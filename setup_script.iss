@@ -4,7 +4,7 @@
 [Setup]
 AppId={{D1BB882B-79CE-420C-AADE-18755BB14253}}
 AppName=Drinkport-Barcode
-AppVersion=1.4
+AppVersion=1.5
 AppPublisher=Drinkport KG
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
