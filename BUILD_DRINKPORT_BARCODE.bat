@@ -43,7 +43,6 @@ echo 3. Erstelle App-Ordner (dist/Drinkport-Barcode)...
     --name="Drinkport-Barcode" ^
     --icon=icon.ico ^
     --add-data "icon.ico;." ^
-    --add-data "label_templates.json;." ^
     --add-data "HANDBUCH.html;." ^
     --collect-all sv_ttk ^
     --collect-all mysql.connector ^
@@ -59,9 +58,8 @@ if errorlevel 1 (
 
 echo.
 :: 4. Finale Dateien sicherstellen (Kopieren in den Root-Ordner für Inno Setup)
-echo 4. Kopiere Handbuch und Vorlagen in den Programm-Ordner...
+echo 4. Kopiere Handbuch in den Programm-Ordner...
 copy /y "HANDBUCH.html" "dist\Drinkport-Barcode\" >nul
-copy /y "label_templates.json" "dist\Drinkport-Barcode\" >nul
 
 echo.
 echo ==================================================

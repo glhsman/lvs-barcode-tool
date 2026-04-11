@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('icon.ico', '.'), ('label_templates.json', '.'), ('HANDBUCH.html', '.')]
+datas = [('icon.ico', '.'), ('HANDBUCH.html', '.')]
 binaries = []
 hiddenimports = ['win32timezone']
 tmp_ret = collect_all('sv_ttk')

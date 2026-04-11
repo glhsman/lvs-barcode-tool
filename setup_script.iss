@@ -26,9 +26,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; Alle Dateien aus dem dist-Ordner rekursiv einbeziehen
 Source: "dist\Drinkport-Barcode\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Label-Templates (wird beim Öffnen des Format-Dialogs neu geladen)
-Source: "label_templates.json"; DestDir: "{app}"; Flags: ignoreversion
-
 ; Erzeuge bei Erstinstallation eine config.ini aus der Vorlage, ohne bestehende Datei zu ueberschreiben
 Source: "example_config.ini"; DestDir: "{app}"; DestName: "config.ini"; Flags: onlyifdoesntexist
 
