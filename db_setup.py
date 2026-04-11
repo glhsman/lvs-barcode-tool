@@ -46,7 +46,7 @@ def run() -> None:
     conn.commit()
     cursor.close()
     conn.close()
-    print("✓ Datenbank-Schema erfolgreich erstellt.")
+    print("OK: Datenbank-Schema erfolgreich erstellt.")
 
 
 if __name__ == "__main__":

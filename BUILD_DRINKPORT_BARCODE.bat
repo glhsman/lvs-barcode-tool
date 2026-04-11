@@ -27,7 +27,7 @@ if exist .venv\Scripts\python.exe (
 ) else (
     set PY_EXE=python
 )
-%PY_EXE% -m pip install pyinstaller sv-ttk mariadb python-barcode qrcode pillow reportlab pywin32 --quiet
+%PY_EXE% -m pip install pyinstaller sv-ttk mysql-connector-python python-barcode qrcode pillow reportlab pywin32 --quiet
 if errorlevel 1 (
     echo.
     echo FEHLER: Abhaengigkeiten konnten nicht installiert werden.

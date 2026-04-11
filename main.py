@@ -117,7 +117,7 @@ def main() -> None:
             print(f"Theme-Fehler (ignoriert): {te}")
         
         from ui.main_window import MainWindow
-        MainWindow(root)
+        MainWindow(root, admin_mode=False)
         root.deiconify()
         root.mainloop()
     except Exception as e:

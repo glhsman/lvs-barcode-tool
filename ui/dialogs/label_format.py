@@ -3,29 +3,19 @@ from __future__ import annotations
 
 import json
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox, simpledialog
 
-import app_config
+import db.repository as repo
 from models.types import LabelFormat
 
 
 def _load_templates() -> list[tuple[str, dict[str, float | int | str]]]:
-    path = app_config.get_templates_file()
-    if not path.exists():
-        return []
-    try:
-        with path.open(encoding="utf-8") as fh:
-            entries = json.load(fh)
-        return [(e["name"], {k: v for k, v in e.items() if k != "name"}) for e in entries]
-    except Exception:
-        return []
-
-
-LABEL_TEMPLATES: list[tuple[str, dict[str, float | int | str]]] = _load_templates()
+    return repo.list_global_templates()
 
 class LabelFormatDialog:
-    def __init__(self, parent: tk.Widget, fmt: LabelFormat):
+    def __init__(self, parent: tk.Widget, fmt: LabelFormat, admin_mode: bool = False):
         self._fmt = fmt
+        self.admin_mode = admin_mode
         self.changed = False
         self._templates = _load_templates()
 
@@ -46,7 +36,8 @@ class LabelFormatDialog:
                                         sticky=tk.W, padx=4, pady=4)
             var = tk.DoubleVar(value=getattr(self._fmt, attr))
             sb  = ttk.Spinbox(f, from_=from_, to=to, increment=inc,
-                              textvariable=var, width=8, format="%.2f")
+                              textvariable=var, width=8, format="%.2f",
+                              state="readonly" if not self.admin_mode else "normal")
             sb.grid(row=r, column=col * 3 + 1, sticky=tk.W, padx=4)
             ttk.Label(f, text="mm").grid(row=r, column=col * 3 + 2, sticky=tk.W)
             self._vars[attr] = var
@@ -73,13 +64,15 @@ class LabelFormatDialog:
 
         ttk.Label(f, text="Hersteller:").grid(row=2, column=0, sticky=tk.W, padx=4, pady=4)
         self._vars["manufacturer"] = tk.StringVar(value=self._fmt.manufacturer)
-        ttk.Entry(f, textvariable=self._vars["manufacturer"], width=22).grid(
+        ttk.Entry(f, textvariable=self._vars["manufacturer"], width=22,
+                  state="disabled" if not self.admin_mode else "normal").grid(
             row=2, column=1, columnspan=2, sticky=tk.W, padx=4
         )
 
         ttk.Label(f, text="Produkt:").grid(row=2, column=3, sticky=tk.W, padx=4, pady=4)
         self._vars["product_name"] = tk.StringVar(value=self._fmt.product_name)
-        ttk.Entry(f, textvariable=self._vars["product_name"], width=20).grid(
+        ttk.Entry(f, textvariable=self._vars["product_name"], width=20,
+                  state="disabled" if not self.admin_mode else "normal").grid(
             row=2, column=4, columnspan=2, sticky=tk.W, padx=4
         )
 
@@ -104,13 +97,15 @@ class LabelFormatDialog:
 
         ttk.Label(f, text="Spalten:").grid(row=14, column=0, sticky=tk.W, padx=4, pady=4)
         var_cols = tk.IntVar(value=self._fmt.cols)
-        ttk.Spinbox(f, from_=1, to=20, textvariable=var_cols, width=8).grid(
+        ttk.Spinbox(f, from_=1, to=20, textvariable=var_cols, width=8,
+                    state="readonly" if not self.admin_mode else "normal").grid(
             row=14, column=1, sticky=tk.W, padx=4)
         self._vars["cols"] = var_cols
 
         ttk.Label(f, text="Reihen:").grid(row=15, column=0, sticky=tk.W, padx=4, pady=4)
         var_rows = tk.IntVar(value=self._fmt.rows)
-        ttk.Spinbox(f, from_=1, to=50, textvariable=var_rows, width=8).grid(
+        ttk.Spinbox(f, from_=1, to=50, textvariable=var_rows, width=8,
+                    state="readonly" if not self.admin_mode else "normal").grid(
             row=15, column=1, sticky=tk.W, padx=4)
         self._vars["rows"] = var_rows
 
@@ -122,6 +117,9 @@ class LabelFormatDialog:
 
         btn = ttk.Frame(f)
         btn.grid(row=19, column=0, columnspan=6, sticky=tk.E, pady=4)
+        if self.admin_mode:
+            ttk.Button(btn, text="Als Vorlage speichern …", 
+                       command=self._save_as_template).pack(side=tk.LEFT, padx=4)
         ttk.Button(btn, text="OK",         command=self._ok).pack(side=tk.RIGHT, padx=4)
         ttk.Button(btn, text="Abbrechen",  command=self._win.destroy).pack(side=tk.RIGHT)
 
@@ -141,3 +139,24 @@ class LabelFormatDialog:
             setattr(self._fmt, attr, var.get())
         self.changed = True
         self._win.destroy()
+
+    def _save_as_template(self) -> None:
+        name = simpledialog.askstring("Vorlage speichern", "Name der neuen Vorlage:", parent=self._win)
+        if not name:
+            return
+        
+        # Aktuelle Werte aus den Variablen in ein temporäres Objekt/Fmt übernehmen
+        from copy import copy
+        temp_fmt = copy(self._fmt)
+        for attr, var in self._vars.items():
+            setattr(temp_fmt, attr, var.get())
+        
+        try:
+            repo.add_global_template(name, temp_fmt)
+            messagebox.showinfo("Erfolg", f"Vorlage '{name}' erfolgreich gespeichert.", parent=self._win)
+            # Liste aktualisieren
+            self._templates = _load_templates()
+            self._template_combo["values"] = ["Benutzerdefiniert"] + [n for n, _ in self._templates]
+            self._template_var.set(name)
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Vorlage konnte nicht gespeichert werden:\n{e}", parent=self._win)

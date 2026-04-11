@@ -97,4 +97,23 @@ CREATE TABLE IF NOT EXISTS saved_labels (
     INDEX idx_project (project_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─── Globale Etiketten-Vorlagen (nur Formate) ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS global_label_templates (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    name             VARCHAR(255) NOT NULL,
+    manufacturer     VARCHAR(100),
+    product_name     VARCHAR(100),
+    width_mm         FLOAT NOT NULL DEFAULT 100.0,
+    height_mm        FLOAT NOT NULL DEFAULT 50.0,
+    margin_top_mm    FLOAT NOT NULL DEFAULT 2.0,
+    margin_bottom_mm FLOAT NOT NULL DEFAULT 2.0,
+    margin_left_mm   FLOAT NOT NULL DEFAULT 2.0,
+    margin_right_mm  FLOAT NOT NULL DEFAULT 2.0,
+    `cols`           INT   NOT NULL DEFAULT 1,
+    `rows`           INT   NOT NULL DEFAULT 1,
+    col_gap_mm       FLOAT NOT NULL DEFAULT 0.0,
+    row_gap_mm       FLOAT NOT NULL DEFAULT 0.0,
+    UNIQUE INDEX idx_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

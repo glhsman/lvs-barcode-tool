@@ -11,8 +11,9 @@ import app_config
 
 
 class MainWindow:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: tk.Tk, admin_mode: bool = False):
         self.root = root
+        self.admin_mode = admin_mode
         self.root.title("Drinkport-Barcode – Python Edition")
         self._theme_var = tk.StringVar(value=getattr(self.root, "theme_profile", "soft_plus"))
         
@@ -57,12 +58,17 @@ class MainWindow:
         m_project.add_separator()
         m_project.add_command(label="Beenden",         command=self.root.quit)
         menubar.add_cascade(label="Projekt", menu=m_project)
-
+        
+        # Einstellungen (Theme immer, Vorlagen nur für Admin)
         m_settings = tk.Menu(menubar, tearoff=False)
+        if self.admin_mode:
+            m_settings.add_command(label="Vorlagen verwalten …", command=self._manage_templates)
+        
         m_theme = tk.Menu(m_settings, tearoff=False)
-        m_theme.add_radiobutton(label="Dark", variable=self._theme_var, value="dark", command=self._apply_theme_from_menu)
-        m_theme.add_radiobutton(label="Dark Soft", variable=self._theme_var, value="soft", command=self._apply_theme_from_menu)
-        m_theme.add_radiobutton(label="Dark Soft+", variable=self._theme_var, value="soft_plus", command=self._apply_theme_from_menu)
+        m_theme.add_radiobutton(label="Heller (Soft Plus)", variable=self._theme_var, value="soft_plus", command=self._apply_theme_from_menu)
+        m_theme.add_radiobutton(label="Mittel (Soft)",      variable=self._theme_var, value="soft",      command=self._apply_theme_from_menu)
+        m_theme.add_radiobutton(label="Dunkel (Standard)",  variable=self._theme_var, value="dark",      command=self._apply_theme_from_menu)
+
         m_settings.add_cascade(label="Theme", menu=m_theme)
         menubar.add_cascade(label="Einstellungen", menu=m_settings)
 
@@ -271,6 +277,10 @@ class MainWindow:
                 self.set_status(f"Theme aktiv: {profile}")
             except Exception as exc:
                 messagebox.showerror("Theme", f"Theme konnte nicht gesetzt werden:\n{exc}")
+
+    def _manage_templates(self) -> None:
+        from ui.dialogs.template_manager import TemplateManagerDialog
+        TemplateManagerDialog(self.root)
 
     def _show_about(self) -> None:
         messagebox.showinfo(

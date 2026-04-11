@@ -34,3 +34,4 @@ error_log.txt
 # Local runtime/config secrets
 config.ini
 setup_script.*
+scratch/

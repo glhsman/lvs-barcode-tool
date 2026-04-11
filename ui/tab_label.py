@@ -913,7 +913,7 @@ class LabelTab:
         if not self._project or not self._fmt:
             return
         from ui.dialogs.label_format import LabelFormatDialog
-        dlg = LabelFormatDialog(self.app.root, self._fmt)
+        dlg = LabelFormatDialog(self.app.root, self._fmt, admin_mode=self.app.admin_mode)
         if dlg.changed:
             repo.save_label_format(self._fmt)
             self.app.mark_changed()

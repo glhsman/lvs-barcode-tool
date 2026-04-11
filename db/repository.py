@@ -446,3 +446,49 @@ def delete_saved_label(label_id: int) -> None:
     cur.execute("DELETE FROM saved_labels WHERE id=%s", (label_id,))
     conn.commit()
     cur.close(); conn.close()
+# ──────────────────────────────────────────────────────────────────────────────
+# Globale Etiketten-Vorlagen (Templates)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def list_global_templates() -> list[tuple[str, dict]]:
+    conn = get_connection()
+    if conn is None: return []
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SELECT * FROM global_label_templates ORDER BY name")
+        rows = cur.fetchall()
+        cur.close(); conn.close()
+        # Rückgabeformat kompatibel zum alten JSON-Lader machen
+        return [(r["name"], {k: v for k, v in r.items() if k not in ("id", "name")}) for r in rows]
+    except Exception:
+        return []
+
+def add_global_template(name: str, fmt: LabelFormat) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO global_label_templates 
+           (name, manufacturer, product_name, width_mm, height_mm, 
+            margin_top_mm, margin_bottom_mm, margin_left_mm, margin_right_mm, 
+            `cols`, `rows`, col_gap_mm, row_gap_mm)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           ON DUPLICATE KEY UPDATE 
+             manufacturer=VALUES(manufacturer), product_name=VALUES(product_name),
+             width_mm=VALUES(width_mm), height_mm=VALUES(height_mm),
+             margin_top_mm=VALUES(margin_top_mm), margin_bottom_mm=VALUES(margin_bottom_mm),
+             margin_left_mm=VALUES(margin_left_mm), margin_right_mm=VALUES(margin_right_mm),
+             `cols`=VALUES(`cols`), `rows`=VALUES(`rows`),
+             col_gap_mm=VALUES(col_gap_mm), row_gap_mm=VALUES(row_gap_mm)""",
+        (name, fmt.manufacturer, fmt.product_name, fmt.width_mm, fmt.height_mm,
+         fmt.margin_top_mm, fmt.margin_bottom_mm, fmt.margin_left_mm, fmt.margin_right_mm,
+         fmt.cols, fmt.rows, fmt.col_gap_mm, fmt.row_gap_mm),
+    )
+    conn.commit()
+    cur.close(); conn.close()
+
+def delete_global_template(name: str) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM global_label_templates WHERE name=%s", (name,))
+    conn.commit()
+    cur.close(); conn.close()

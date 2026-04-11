@@ -42,7 +42,7 @@ Im **Reiter „Etikett"** → **„Format"**-Dialog findest du vordefinierte **L
 
 Wähle ein Template aus der Dropdown-Liste und klicke **„Übernehmen"**, um Größe und Layout automatisch zu setzen. Du kannst die Werte anschließend manuell anpassen.
 
-> **Tipp:** Die Template-Liste wird aus der Datei `label_templates.json` geladen, die neben der Anwendung liegt. Du kannst dort eigene Templates hinzufügen oder bestehende anpassen – ohne Programmierkenntnisse und ohne Neustart der Anwendung.
+> **Tipp:** Die Vorlagen werden zentral in der MariaDB-Datenbank verwaltet. Administratoren können neue Vorlagen erstellen oder bestehende ändern, die dann sofort für alle Benutzer verfügbar sind.
 
 ### Schritt D: Das Etikett gestalten (Reiter „Etikett")
 Hier zeichnest du dein Layout:
@@ -67,11 +67,25 @@ Hier zeichnest du dein Layout:
 
 ---
 
-## 🛠️ 3. Fehlersuche & Tipps
+## 🔐 4. Administrator-Modus (Template-Management)
+
+Für die Verwaltung der globalen Etikettenformate steht das separate Programm **Drinkport-Barcode Admin** zur Verfügung. Dieses Tool dient ausschließlich der Pflege der Vorlagendatenbank.
+
+### Funktionen im Admin-Tool:
+1. **Vorlagen wählen:** In der linken Liste werden alle gespeicherten Formate mit Name und Hersteller angezeigt. Mit einem Klick werden die Details geladen.
+2. **Vorlagen bearbeiten:** Du kannst Abmessungen, Ränder und Bogenlayouts (Spalten/Reihen) direkt anpassen. 
+3. **Änderungen speichern:** Speichert die Werte in der Datenbank. Wenn du den Namen änderst, wird die Vorlage automatisch umbenannt.
+4. **Als neue Vorlage speichern:** Erstellt eine Kopie der aktuellen Einstellungen unter einem neuen Namen.
+5. **Vorlage löschen:** Entfernt veraltete Formate unwiederbringlich aus der Datenbank.
+6. **Felder leeren:** Setzt das Formular zurück, um ein völlig neues Format (z.B. für einen neuen Drucker) zu definieren.
+
+---
+
+## 🛠️ 5. Fehlersuche & Tipps
 
 *   **Barcode wird nicht angezeigt:** Überprüfe, ob deine Daten für den gewählten Typ gültig sind (z.B. braucht ein EAN-13 genau 13 Ziffern).
 *   **Platzhalter leer:** Prüfe im Reiter „Daten -> Felder bearbeiten“, ob der Feldname exakt mit deinem Platzhalter übereinstimmt (z.B. `[~ArtNr~]`). Die Groß-/Kleinschreibung wird vom Programm automatisch toleriert.
 *   **Keine DLL nötig:** Dieses Programm nutzt eine integrierte Python-Engine für Barcodes.
 
 ---
-*Version 1.5 / April 2026*
+*Version 1.6.0 / Mai 2026*

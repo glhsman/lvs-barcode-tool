@@ -439,7 +439,7 @@ code {
 </ul>
 <p>Wähle ein Template aus der Dropdown-Liste und klicke <strong>„Übernehmen&quot;</strong>, um Größe und Layout automatisch zu setzen. Du kannst die Werte anschließend manuell anpassen.</p>
 <blockquote>
-<p><strong>Tipp:</strong> Die Template-Liste wird aus der Datei <code>label_templates.json</code> geladen, die neben der Anwendung liegt. Du kannst dort eigene Templates hinzufügen oder bestehende anpassen – ohne Programmierkenntnisse und ohne Neustart der Anwendung.</p>
+<p><strong>Tipp:</strong> Die Vorlagen werden zentral in der MariaDB-Datenbank verwaltet. Administratoren können neue Vorlagen erstellen oder bestehende ändern, die dann sofort für alle Benutzer verfügbar sind.</p>
 </blockquote>
 <h3 id="schritt-d-das-etikett-gestalten-reiter-%E2%80%9Eetikett%22">Schritt D: Das Etikett gestalten (Reiter „Etikett&quot;)</h3>
 <p>Hier zeichnest du dein Layout:</p>
@@ -466,14 +466,26 @@ code {
 <li><strong>Archivierung:</strong> Mit <strong>„In DB speichern&quot;</strong> wird das Etikett dauerhaft als Bild in der Datenbank archiviert (erscheint in der Liste rechts).</li>
 </ol>
 <hr>
-<h2 id="%F0%9F%9B%A0%EF%B8%8F-3-fehlersuche--tipps">🛠️ 3. Fehlersuche &amp; Tipps</h2>
+<h2 id="%F0%9F%94%90-4-administrator-modus-template-management">🔐 4. Administrator-Modus (Template-Management)</h2>
+<p>Für die Verwaltung der globalen Etikettenformate steht das separate Programm <strong>Drinkport-Barcode Admin</strong> zur Verfügung. Dieses Tool dient ausschließlich der Pflege der Vorlagendatenbank.</p>
+<h3 id="funktionen-im-admin-tool">Funktionen im Admin-Tool:</h3>
+<ol>
+<li><strong>Vorlagen wählen:</strong> In der linken Liste werden alle gespeicherten Formate mit Name und Hersteller angezeigt. Mit einem Klick werden die Details geladen.</li>
+<li><strong>Vorlagen bearbeiten:</strong> Du kannst Abmessungen, Ränder und Bogenlayouts (Spalten/Reihen) direkt anpassen.</li>
+<li><strong>Änderungen speichern:</strong> Speichert die Werte in der Datenbank. Wenn du den Namen änderst, wird die Vorlage automatisch umbenannt.</li>
+<li><strong>Als neue Vorlage speichern:</strong> Erstellt eine Kopie der aktuellen Einstellungen unter einem neuen Namen.</li>
+<li><strong>Vorlage löschen:</strong> Entfernt veraltete Formate unwiederbringlich aus der Datenbank.</li>
+<li><strong>Felder leeren:</strong> Setzt das Formular zurück, um ein völlig neues Format (z.B. für einen neuen Drucker) zu definieren.</li>
+</ol>
+<hr>
+<h2 id="%F0%9F%9B%A0%EF%B8%8F-5-fehlersuche--tipps">🛠️ 5. Fehlersuche &amp; Tipps</h2>
 <ul>
 <li><strong>Barcode wird nicht angezeigt:</strong> Überprüfe, ob deine Daten für den gewählten Typ gültig sind (z.B. braucht ein EAN-13 genau 13 Ziffern).</li>
 <li><strong>Platzhalter leer:</strong> Prüfe im Reiter „Daten -&gt; Felder bearbeiten“, ob der Feldname exakt mit deinem Platzhalter übereinstimmt (z.B. <code>[~ArtNr~]</code>). Die Groß-/Kleinschreibung wird vom Programm automatisch toleriert.</li>
-<li><strong>Keine DLL nötig:</strong> Dieses Programm nutzt eine integrierte Python-Engine für Barcodes.</li>
+<li><strong>Datenbank-Verbindung:</strong> Das Admin-Tool und das Hauptprogramm nutzen die gleichen Zugangsdaten in der <code>config.ini</code>.</li>
 </ul>
 <hr>
-<p><em>Version 1.5 / April 2026</em></p>
+<p><em>Version 1.6.0 / Mai 2026</em></p>
 
 </body>
 </html>
