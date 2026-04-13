@@ -5,7 +5,7 @@
 ; Eigene AppId für das Admin-Tool
 AppId={{E2CC993C-80DF-511D-BBEE-29866CC25364}}
 AppName=Drinkport-Barcode Admin
-AppVersion=1.5
+AppVersion=1.6
 AppPublisher=Drinkport KG
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible

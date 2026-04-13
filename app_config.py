@@ -51,3 +51,24 @@ def get_username() -> str:
 
 def get_templates_file() -> Path:
     return _BASE_DIR / "label_templates.json"
+
+
+def get_last_csv_path() -> str:
+    if _cfg.has_section("history"):
+        return _cfg.get("history", "last_csv", fallback="").strip(' "\'')
+    return ""
+
+
+def set_last_csv_path(path: str) -> None:
+    if not _cfg.has_section("history"):
+        _cfg.add_section("history")
+    _cfg.set("history", "last_csv", path)
+    _save_cfg()
+
+
+def _save_cfg() -> None:
+    try:
+        with open(_CFG_FILE, "w", encoding="utf-8") as f:
+            _cfg.write(f)
+    except Exception as e:
+        print(f"Fehler beim Speichern der Konfiguration: {e}")

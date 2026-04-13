@@ -102,6 +102,22 @@ class MainWindow:
         self._changed_label = ttk.Label(toolbar, text="", foreground="red")
         self._changed_label.pack(side=tk.RIGHT, padx=8)
 
+        # Globale Suche (für Print-Tab Navigation)
+        self._search_var = tk.StringVar()
+        ttk.Button(toolbar, text="Suchen", command=self._on_search_btn, width=8).pack(side=tk.RIGHT, padx=(0, 10))
+        search_entry = ttk.Entry(toolbar, textvariable=self._search_var, width=20)
+        search_entry.pack(side=tk.RIGHT, padx=4)
+        search_entry.bind("<Return>", lambda e: self._on_search_btn())
+        ttk.Label(toolbar, text="🔍 Datensatz suchen:").pack(side=tk.RIGHT, padx=(20, 0))
+
+    def _on_search_btn(self) -> None:
+        term = self._search_var.get().strip()
+        if not term:
+            return
+        # Zum Print-Tab wechseln und suchen
+        self.notebook.select(2)
+        self.tab_print.search_and_jump(term)
+
     # ─── Notebook (3 Tabs) ────────────────────────────────────────────────────
 
     def _build_notebook(self) -> None:
@@ -286,7 +302,7 @@ class MainWindow:
         messagebox.showinfo(
             "Über Drinkport-Barcode – Python Edition",
             "Drinkport-Barcode – Python Edition\n"
-            "Version 1.5\n"
+            "Version 1.6\n"
             "Moderne Lösung für Lagerbeschriftungen\n\n"
             "Barcode-Engine: Python Native (barcode/qrcode)\n"
             "Datenbank: MariaDB\n"

@@ -1,27 +1,28 @@
-# 🏷️ Drinkport-Barcode – Python Edition v1.5
+# 🏷️ Drinkport-Barcode – Python Edition v1.6
 
-Ein professioneller Etikett-Editor mit Datenbankanbindung, Barcode-Integration und Python/Tkinter-Frontend.
+Ein leistungsstarker WYSIWYG Etikett-Editor mit Datenbankanbindung, spezialisiert auf Lagerbeschriftung und Barcodes.
 
-## Neu in Version 1.5
+## ✨ Highlights in Version 1.6
 
-- **WYSIWYG Etiketten-Editor:** Vollständige Überarbeitung der Vorschau zur Beseitigung von Skalierungsproblemen zwischen Editor und Druck.
-- **Präzisere Formatierung:** Verbesserte Handhabung von Schriftarten, Textausrichtung und Stilvorgaben.
-- **Integrierte Hilfe:** Direkter Zugriff auf das Benutzerhandbuch (`HANDBUCH.html`) aus der Anwendung heraus (Menü Hilfe).
-- **Setup-Optimierung:** Handbuch wird nun automatisch mitinstalliert und im Paket ausgeliefert.
+- **🚀 Hochleistungs-CSV-Import:** Bis zu 20x schnellerer Import durch optimiertes Transaction-Batching.
+- **⚡ Sitzungs-Modus:** Große Datenmengen flexibel "nur für diese Sitzung" laden, ohne die Datenbank zu füllen.
+- **🖨️ Seriendruck (Batch Printing):** Drucken Sie hunderte oder tausende Etiketten in einem einzigen Druckauftrag.
+- **🔍 Globale Schnellsuche:** Suchen und Springen zu Datensätzen direkt aus der Haupt-Symbolleiste.
+- **📂 Pfad-Gedächtnis:** Merkt sich den letzten CSV-Speicherort für effiziente, tägliche Workflows.
+- **🛠️ Feld-Management:** Automatische Neuerstellung von Datenbankfeldern direkt aus CSV-Headern.
+- **📱 Optimierte UI:** Überarbeitete Dialoge und Fortschrittsanzeigen für flüssiges Arbeiten auch bei großen Datenmengen.
 
-## Verfügbare Versionen
+---
 
-- **Windows Standalone:** [dist/Drinkport-Barcode_Setup.exe](dist/Drinkport-Barcode_Setup.exe) – Installierbare EXE für Windows 64-bit
-- **Source Code:** Für Entwicklung und Anpassungen: Python 3.9+ erforderlich
+## 🏗️ Voraussetzungen (Development)
 
-## Voraussetzungen (für Development)
+- **Python:** Version 3.9 oder neuer
+- **Datenbank:** MariaDB oder MySQL Server
+- **Betriebssystem:** Windows (für nativen GDI-Druck)
 
-- Python 3.9 oder neuer
-- Zugriff auf die MariaDB-Datenbank `barcode`
+## ⚙️ Konfiguration
 
-## Konfiguration
-
-Zugangsdaten in `config.ini` eintragen:
+Tragen Sie Ihre DB-Zugangsdaten in der `config.ini` ein:
 
 ```ini
 [database]
@@ -29,50 +30,54 @@ host     = <Hostname>
 port     = 3306
 user     = <Benutzer>
 password = <Passwort>
-database = barcode
+database = drinkport_barcode
+
+[app]
+default_dpi = 203
+username    = <Ihr_Kürzel>
 ```
 
-Etikett-Templates in `label_templates.json` anpassen (liegt neben der EXE bzw. im Projektordner). Neue Templates können ohne Code-Änderung ergänzt werden – das Programm lädt die Datei bei jedem Öffnen des Format-Dialogs neu.
+Die Verwaltung und Gestaltung der Etiketten-Vorlagen erfolgt komfortabel über das separate Programm **Barcode-Admin**. Mit diesem Tool können Sie Felder hinzufügen, Barcodes positionieren und Styles definieren, ohne die `label_templates.json` manuell bearbeiten zu müssen.
 
-## Einrichtung (einmalig)
+Das Hauptprogramm lädt die Vorlagen automatisch bei jedem Öffnen des Format-Dialogs neu.
+
+## 🚀 Einrichtung (Source-Installation)
 
 ```powershell
-# Optional: virtuelle Umgebung anlegen
+# 1. Virtuelle Umgebung anlegen
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# Abhängigkeiten installieren (inkl. sv-ttk für das UI-Theme)
+# 2. Abhängigkeiten installieren
 pip install -r requirements.txt
 
-# Falls sv-ttk fehlt, einzeln nachinstallieren:
-# pip install sv-ttk
-
-# Datenbank-Schema anlegen (Tabellen in bestehender DB erstellen)
+# 3. Datenbank-Schema initialisieren
 python db_setup.py
 ```
 
-## Anwendung starten
+## 🖥️ Anwendung starten
 
-### Windows (via Installer)
-Windows Installer starten: `Drinkport-Barcode_Setup.exe`
-
-### Development (via Python)
+### Als Entwickler
 ```powershell
 python main.py
 ```
 
-## Verbindung testen
+### Als Endanwender (Windows)
+Verwenden Sie den Installer: `dist/Drinkport-Barcode_Setup.exe` (falls gebaut).
 
-```powershell
-python -c "from db.connection import get_connection; c = get_connection(); print('Verbindung OK'); c.close()"
-```
+## 🛠️ Build-Prozess (EXE & Installer)
 
-## Build (für Entwickler)
+Um eine eigenständige Windows-Anwendung inklusive Installer zu erstellen, führen Sie einfach die Batch-Datei aus:
 
-Standalone EXE unter Windows erstellen:
 ```cmd
 BUILD_DRINKPORT_BARCODE.bat
 ```
-✓ Setzt automatisch alle Abhängigkeiten auf
-✓ PyInstaller kompiliert die App zu `dist/Drinkport-Barcode/`
-✓ Inno Setup erstellt das Installer-Setup
+Dies führt folgende Schritte automatisch aus:
+1. Prüft Python-Umgebung und Abhängigkeiten.
+2. Kompiliert die App via **PyInstaller** zu einer Standalone-Verzeichnisstruktur.
+3. Erstellt mit **Inno Setup** einen installationsfähigen Windows-Installer.
+
+---
+
+## 📚 Hilfe & Dokumentation
+Zusätzliche Informationen zur Bedienung finden Sie im integrierten Benutzerhandbuch über das Menü **Hilfe -> Benutzerhandbuch**.

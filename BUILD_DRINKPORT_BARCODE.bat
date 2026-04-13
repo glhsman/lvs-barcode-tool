@@ -2,7 +2,7 @@
 setlocal
 color 0B
 echo ==================================================
-echo RADIKAL-BUILD: Drinkport-Barcode (v1.5)
+echo RADIKAL-BUILD: Drinkport-Barcode (v1.6)
 echo ==================================================
 echo.
 

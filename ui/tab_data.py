@@ -21,11 +21,17 @@ class DataTab:
         self._project: Project | None = None
         self._fields: list[ProjectField] = []
         self._records: list[DataRecord] = []
+        self._is_temp_mode = False
         self._build_ui()
 
     # ─── UI aufbauen ──────────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
+        # Warnleiste für Temporär-Modus
+        self._temp_info = ttk.Label(self.frame, text="⚠️ SITZUNGS-MODUS: Daten sind nur im Arbeitsspeicher und werden NICHT gespeichert!",
+                                    background="#FFF9C4", foreground="#5D4037", padding=5, font=("", 9, "bold"), anchor=tk.CENTER)
+        # Wird nur bei Bedarf per pack angezeigt
+
         # Obere Button-Leiste
         btn_frame = ttk.Frame(self.frame, padding=4)
         btn_frame.pack(side=tk.TOP, fill=tk.X)
@@ -35,10 +41,9 @@ class DataTab:
         self._btn("Exportieren …",      btn_frame, self._export_csv)
         self._btn("Suchen …",           btn_frame, self._search)
         ttk.Separator(btn_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
-        self._btn("Alle markieren",     btn_frame, self._select_all)
-        self._btn("Bearbeiten",         btn_frame, self._edit_selected)
-        self._btn("Anwählen",           btn_frame, lambda: self._set_selected_flag(True))
-        self._btn("Abwählen",           btn_frame, lambda: self._set_selected_flag(False))
+        self._btn("Alles markieren",    btn_frame, self._select_all)
+        self._btn("Druck-Häkchen setzen",  btn_frame, lambda: self._set_selected_flag(True))
+        self._btn("Druck-Häkchen entfernen", btn_frame, lambda: self._set_selected_flag(False))
         self._btn("Löschen",            btn_frame, self._delete_selected)
         ttk.Separator(btn_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6)
         self._btn("Felder bearbeiten",  btn_frame, self._manage_fields)
@@ -86,16 +91,29 @@ class DataTab:
     # ─── Daten laden ──────────────────────────────────────────────────────────
 
     def load_project(self, project: Project) -> None:
+        self._is_temp_mode = False
+        self._temp_info.pack_forget()
         self._project = project
         self._fields  = repo.list_fields(project.id)
         self._records = repo.list_records(project.id)
         self._rebuild_columns()
         self._populate_tree()
 
+    def set_temporary_records(self, records: list[DataRecord], fields: Optional[list[ProjectField]] = None) -> None:
+        """Injects records for session only (not in DB)."""
+        if fields is not None:
+            self._fields = fields
+        self._records = records
+        self._is_temp_mode = True
+        self._temp_info.pack(side=tk.TOP, fill=tk.X)
+        self._rebuild_columns()
+        self._populate_tree()
+        self._update_status()
+
     def _rebuild_columns(self) -> None:
         cols = ["#"] + [f.name for f in self._fields]
         self._tree.config(columns=cols)
-        self._tree.heading("#", text="✓")
+        self._tree.heading("#", text="Druck")
         self._tree.column ("#", width=30, anchor=tk.CENTER, stretch=False)
         for f in self._fields:
             self._tree.heading(f.name, text=f.name,
@@ -104,7 +122,11 @@ class DataTab:
 
     def _populate_tree(self) -> None:
         self._tree.delete(*self._tree.get_children())
-        for rec in self._records:
+        total = len(self._records)
+        for i, rec in enumerate(self._records):
+            if i % 1000 == 0:
+                self.app.root.update()
+            
             check = "✓" if rec.selected else ""
             values = [check] + [rec.values.get(f.name, "") for f in self._fields]
             tag = "selected" if rec.selected else ""
@@ -115,9 +137,10 @@ class DataTab:
     def _update_status(self) -> None:
         total  = len(self._records)
         active = sum(1 for r in self._records if r.selected)
-        self._status_var.set(
-            f"Datensätze gesamt: {total}  |  Zum Drucken angewählt: {active}"
-        )
+        txt = f"Datensätze gesamt: {total}  |  Für Seriendruck markiert (✓): {active}"
+        if self._is_temp_mode:
+            txt = "⚡ TEMPORÄRE SITZUNGS-DATEN (Nicht gespeichert!) | " + txt
+        self._status_var.set(txt)
 
     # ─── Aktionen ─────────────────────────────────────────────────────────────
 
@@ -154,16 +177,36 @@ class DataTab:
 
     def _delete_selected(self) -> None:
         iids = self._tree.selection()
-        if not iids:
+        
+        # 1. Fall: Zeilen im Baum sind blau markiert
+        if iids:
+            if not messagebox.askyesno("Löschen", f"{len(iids)} hervorgehobene Datensätze löschen?"):
+                return
+            ids = [int(i) for i in iids]
+            repo.delete_records(ids)
+            self._records = [r for r in self._records if r.id not in ids]
+            self._populate_tree()
+            self._update_status()
+            self.app.mark_changed()
             return
-        if not messagebox.askyesno("Löschen",
-                                   f"{len(iids)} Datensatz/Datensätze löschen?"):
+
+        # 2. Fall: Keine Zeilen blau markiert -> Prüfen ob Druck-Häkchen (✓) gesetzt sind
+        marked_ids = [r.id for r in self._records if r.selected]
+        if marked_ids:
+            if not messagebox.askyesno("Löschen", 
+                                       f"Es sind keine Zeilen markiert, aber {len(marked_ids)} Datensätze haben ein Druck-Häkchen (✓).\n\n"
+                                       "Sollen ALLE Datensätze mit Häkchen gelöscht werden?"):
+                return
+            repo.delete_records(marked_ids)
+            self._records = [r for r in self._records if not r.selected]
+            self._is_temp_mode = False # Falls im Sitzungsmodus, jetzt eh weg
+            self._temp_info.pack_forget()
+            self._populate_tree()
+            self._update_status()
+            self.app.mark_changed()
             return
-        ids = [int(i) for i in iids]
-        repo.delete_records(ids)
-        self._records = [r for r in self._records if r.id not in ids]
-        self._populate_tree()
-        self.app.mark_changed()
+
+        messagebox.showinfo("Löschen", "Bitte wählen Sie erst Datensätze in der Liste aus (blau markieren) oder setzen Sie Druck-Häkchen.")
 
     def _set_selected_flag(self, flag: bool) -> None:
         iids = self._tree.selection()
@@ -180,8 +223,10 @@ class DataTab:
     def _select_all(self) -> None:
         if not self._records:
             return
+        # Wenn bereits alle markiert sind -> alle abwählen. Sonst alle anwählen.
         all_selected = all(r.selected for r in self._records)
         flag = not all_selected
+        
         ids = [r.id for r in self._records]
         repo.set_record_selected(ids, flag)
         for r in self._records:
@@ -211,7 +256,7 @@ class DataTab:
         if not self._project:
             return
         from ui.dialogs.csv_import import CsvImportDialog
-        dlg = CsvImportDialog(self.app.root, self._project, self._fields)
+        dlg = CsvImportDialog(self.app, self.app.root, self._project, self._fields)
         if dlg.imported_count:
             self.load_project(self._project)
             self.app.mark_changed()

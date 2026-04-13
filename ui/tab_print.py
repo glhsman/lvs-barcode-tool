@@ -74,7 +74,8 @@ class PrintTab:
             ("In DB speichern", self._save_to_db),
             ("Als PNG exportieren", lambda: self._export("PNG")),
             ("Als PDF exportieren", lambda: self._export("PDF")),
-            ("Drucken …", self._print_current),
+            ("Drucken (Einzel)", self._print_current),
+            ("Seriendruck …", self._batch_print),
             ("↻ Aktualisieren", self.refresh_preview),
         ]
         for i, (label, cmd) in enumerate(action_btns):
@@ -443,3 +444,30 @@ class PrintTab:
         ttk.Button(btn_grid, text="Druckereigenschaften …", command=on_configure).pack(fill=tk.X, pady=2)
         ttk.Button(btn_grid, text="JETZT DRUCKEN", command=do_print).pack(fill=tk.X, pady=5)
         ttk.Button(btn_grid, text="Abbrechen", command=choice_win.destroy).pack(fill=tk.X)
+
+    def _batch_print(self) -> None:
+        if not self._project:
+            return
+        from ui.dialogs.batch_print_dialog import BatchPrintDialog
+        BatchPrintDialog(self.app.root, self.app)
+
+    def search_and_jump(self, term: str) -> None:
+        term = term.strip().lower()
+        if not term:
+            return
+        
+        records = self.app.tab_data.records
+        if not records:
+            return
+        
+        # Suche ab dem aktuellen Datensatz + 1 (zyklisch)
+        start_idx = (self._current_record_idx + 1) % len(records)
+        
+        for i in range(len(records)):
+            idx = (start_idx + i) % len(records)
+            rec = records[idx]
+            if any(term in str(v).lower() for v in rec.values.values()):
+                self._goto(idx)
+                return
+        
+        messagebox.showinfo("Suche", f"Kein Treffer für «{term}»")

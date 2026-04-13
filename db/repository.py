@@ -130,6 +130,15 @@ def delete_field(field_id: int) -> None:
     cur.close(); conn.close()
 
 
+def delete_fields_by_project(project_id: int) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM project_fields WHERE project_id=%s", (project_id,))
+    conn.commit()
+    cur.close(); conn.close()
+    touch_project(project_id)
+
+
 def reorder_fields(project_id: int, field_ids: list[int]) -> None:
     conn = get_connection()
     cur = conn.cursor()
@@ -180,29 +189,68 @@ def list_records(project_id: int) -> list[DataRecord]:
         return []
 
 
-def add_record(project_id: int, values: dict[str, str], selected: bool = True) -> DataRecord:
+def add_record(project_id: int, values: dict[str, str], selected: bool = False) -> DataRecord:
+    res = add_records_batch(project_id, [values], selected)
+    return res[0] if res else None
+
+
+def add_records_batch(project_id: int, records_values: list[dict[str, str]],
+                      selected: bool = False, progress_callback=None) -> list[DataRecord]:
+    """Fügt viele Datensätze in einer einzigen Transaktion hinzu (Performance!)."""
+    if not records_values:
+        return []
+
     conn = get_connection()
-    if conn is None: return DataRecord(id=0, project_id=0, selected=False, position=0, values={})
-    cur = conn.cursor(dictionary=True)
+    if conn is None:
+        return []
+    
+    try:
+        cur = conn.cursor(dictionary=True)
+        
+        # 1. Start-Position ermitteln
+        cur.execute(
+            "SELECT COALESCE(MAX(position),0)+1 FROM data_records WHERE project_id=%s",
+            (project_id,),
+        )
+        start_pos = cur.fetchone()["COALESCE(MAX(position),0)+1"]
+        
+        # 2. Field Map laden (Name -> ID)
+        cur.execute("SELECT id, name FROM project_fields WHERE project_id=%s", (project_id,))
+        field_map = {r["name"]: r["id"] for r in cur.fetchall()}
+        
+        results = []
+        for i, values in enumerate(records_values):
+            pos = start_pos + i
+            cur.execute(
+                "INSERT INTO data_records (project_id, selected, position) VALUES (%s,%s,%s)",
+                (project_id, int(selected), pos),
+            )
+            rid = cur.lastrowid
+            
+            # Values einzeln einfügen (innerhalb derselben Transaktion)
+            for fname, fval in values.items():
+                fid = field_map.get(fname)
+                if fid is not None:
+                    cur.execute(
+                        "INSERT INTO record_values (record_id, field_id, value) VALUES (%s,%s,%s)",
+                        (rid, fid, fval),
+                    )
+            
+            results.append(DataRecord(id=rid, project_id=project_id, selected=selected,
+                                      position=pos, values=values))
+            
+            if progress_callback and i % 50 == 0:
+                progress_callback(i + 1, len(records_values))
 
-    cur.execute(
-        "SELECT COALESCE(MAX(position),0)+1 FROM data_records WHERE project_id=%s",
-        (project_id,),
-    )
-    pos = cur.fetchone()["COALESCE(MAX(position),0)+1"]
-
-    cur.execute(
-        "INSERT INTO data_records (project_id, selected, position) VALUES (%s,%s,%s)",
-        (project_id, int(selected), pos),
-    )
-    rid = cur.lastrowid
-
-    _write_record_values(cur, rid, project_id, values)
-    conn.commit()
-    cur.close(); conn.close()
-    touch_project(project_id)
-    return DataRecord(id=rid, project_id=project_id, selected=selected,
-                      position=pos, values=values)
+        conn.commit()
+        touch_project(project_id)
+        return results
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cur.close()
+        conn.close()
 
 
 def update_record(record: DataRecord) -> None:
@@ -230,6 +278,15 @@ def delete_records(record_ids: list[int]) -> None:
     cur.execute(f"DELETE FROM data_records WHERE id IN ({placeholders})", record_ids)
     conn.commit()
     cur.close(); conn.close()
+
+
+def delete_records_by_project(project_id: int) -> None:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM data_records WHERE project_id=%s", (project_id,))
+    conn.commit()
+    cur.close(); conn.close()
+    touch_project(project_id)
 
 
 def set_record_selected(record_ids: list[int], selected: bool) -> None:

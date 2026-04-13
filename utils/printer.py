@@ -9,28 +9,29 @@ from PIL import Image, ImageWin
 
 
 def print_pil_image(pil_img: Image.Image, printer_name: str, title: str = "Barcode Forge Print"):
-    """Druckt ein PIL Image direkt ohne Dialog (da dieser separat davor gezeigt wird)."""
+    """Druckt ein einzelnes PIL Image direkt."""
+    print_pil_images([pil_img], printer_name, title)
+
+
+def print_pil_images(pil_imgs: list[Image.Image], printer_name: str, title: str = "Barcode Forge Print"):
+    """Druckt eine Liste von PIL Images in einem einzigen Druckauftrag."""
     import win32print
     import win32ui
     import win32con
 
-    # Verbindung zum Drucker (Device Context)
     hDC = win32ui.CreateDC()
     hDC.CreatePrinterDC(printer_name)
     
-    # Drucker-Fähigkeiten
     printable_area = hDC.GetDeviceCaps(win32con.HORZRES), hDC.GetDeviceCaps(win32con.VERTRES)
     
     hDC.StartDoc(title)
-    hDC.StartPage()
+    
+    for pil_img in pil_imgs:
+        hDC.StartPage()
+        dib = ImageWin.Dib(pil_img)
+        dib.draw(hDC.GetHandleOutput(), (0, 0, printable_area[0], printable_area[1]))
+        hDC.EndPage()
 
-    # Bild für GDI vorbereiten
-    dib = ImageWin.Dib(pil_img)
-
-    # Bild auf die Seite zeichnen (Skalierung auf Printable Area)
-    dib.draw(hDC.GetHandleOutput(), (0, 0, printable_area[0], printable_area[1]))
-
-    hDC.EndPage()
     hDC.EndDoc()
     hDC.DeleteDC()
 
